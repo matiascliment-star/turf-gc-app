@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Fija — Guía de patrones · Turf GC</title>
+<style>
+  :root { --papel:#f0e9d9; --papel2:#e9e1cd; --tinta:#181410; --tinta2:#4a4238;
+          --rojo:#a8231b; --verde:#1e6b3a; --oro:#8a6d1f;
+          --filete:rgba(24,20,16,.4); --filete-suave:rgba(24,20,16,.18); }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--papel); color:var(--tinta);
+         font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:1.5;
+         background-image: radial-gradient(rgba(120,100,60,.06) 1px, transparent 1px);
+         background-size: 4px 4px; }
+  .condensada { font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif; }
+  .hoja { max-width:720px; margin:0 auto; padding:14px 14px 44px; }
+
+  header { text-align:center; padding:10px 0 12px; border-bottom:4px double var(--tinta); }
+  .volver { display:inline-block; font:bold 13px 'Arial Narrow',Arial,sans-serif; letter-spacing:1px;
+    color:var(--tinta); text-decoration:none; border:2px solid var(--tinta); padding:4px 12px;
+    margin-bottom:12px; background:var(--papel2); }
+  .volver:hover { background:var(--tinta); color:var(--papel); }
+  header .marca { font-size:44px; font-weight:bold; letter-spacing:4px; line-height:1; }
+  header .marca span { color:var(--rojo); }
+  .lema { font-style:italic; color:var(--tinta2); font-size:14px; margin-top:6px; }
+
+  .ley { text-align:center; padding:20px 6px 16px; border-bottom:1px solid var(--filete); }
+  .ley h2 { font-size:26px; letter-spacing:1px; margin-bottom:10px; }
+  .ley p { max-width:600px; margin:7px auto; font-size:15.5px; }
+  .ley .destacado { color:var(--rojo); font-weight:bold; }
+  .ejemplo { background:var(--papel2); border:1px solid var(--filete-suave); padding:8px 12px;
+    font-size:14px; max-width:600px; margin:10px auto 0; text-align:left; }
+
+  .bolsillo { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:4px double var(--tinta); }
+  .bolsillo > div { padding:14px 6px 16px; text-align:center; border-right:1px solid var(--filete-suave); }
+  .bolsillo > div:last-child { border-right:none; }
+  .cifra { font-family:'Courier New',monospace; font-weight:bold; font-size:26px; display:block; }
+  .cifra.mala { color:var(--rojo); } .cifra.buena { color:var(--verde); } .cifra.neutra { color:var(--oro); }
+  .bolsillo small { display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px;
+    margin-top:4px; line-height:1.35; color:var(--tinta2); }
+  @media (max-width:540px){ .bolsillo { grid-template-columns:1fr 1fr; }
+    .bolsillo > div:nth-child(2){ border-right:none; }
+    .bolsillo > div:nth-child(-n+2){ border-bottom:1px solid var(--filete-suave); } }
+
+  .seccion-titulo { font:bold 22px 'Arial Narrow',Arial,sans-serif; text-transform:uppercase;
+    letter-spacing:2px; margin:34px 0 4px; padding-top:10px; border-top:3px solid var(--tinta); }
+  .seccion-sub { font-style:italic; color:var(--tinta2); margin-bottom:16px; font-size:14.5px; }
+
+  .regla { display:grid; grid-template-columns:46px 1fr; gap:14px; padding:16px 0;
+    border-top:1px solid var(--filete-suave); }
+  .regla:first-of-type { border-top:none; }
+  .num { font:bold 38px Georgia,serif; line-height:1; color:var(--oro); text-align:center; }
+  .viene { font:bold 12px 'Arial Narrow',Arial,sans-serif; text-transform:uppercase;
+    letter-spacing:1.5px; color:var(--tinta2); margin-bottom:4px; }
+  .veredicto { font:bold 20px Georgia,serif; line-height:1.15; margin-bottom:6px; }
+  .veredicto.sube { color:var(--verde); } .veredicto.baja { color:var(--rojo); }
+  .veredicto.mixto { color:var(--oro); }
+  .regla p { margin:5px 0; font-size:15px; }
+  .ojo { font-size:13.5px; color:var(--tinta2); }
+  .ojo b { color:var(--rojo); font-family:'Arial Narrow',Arial,sans-serif; letter-spacing:1px; }
+
+  .capas { border:1px solid var(--filete); margin:14px 0; background:var(--papel2); }
+  .capa { display:grid; grid-template-columns:150px 1fr; gap:14px; padding:11px 14px;
+    border-top:1px solid var(--filete-suave); align-items:baseline; }
+  .capa:first-child { border-top:none; }
+  .capa .cuanto { font-family:'Courier New',monospace; font-weight:bold; font-size:14.5px; }
+  .capa p { margin:0; font-size:14.5px; }
+  @media (max-width:540px){ .capa { grid-template-columns:1fr; gap:2px; } }
+
+  .secuencia { display:flex; gap:8px; margin:16px 0; flex-wrap:wrap; }
+  .paso { flex:1 1 140px; background:var(--papel2); border:1px solid var(--filete-suave);
+    padding:10px 8px; text-align:center; }
+  .paso .cual { font:bold 22px Georgia,serif; display:block; }
+  .paso small { font-size:12.5px; line-height:1.3; display:block; margin-top:3px; color:var(--tinta2); }
+  .paso:nth-child(1) .cual { color:var(--rojo); } .paso:nth-child(2) .cual { color:var(--oro); }
+  .paso:nth-child(3) .cual { color:var(--verde); }
+
+  .cancha { border:1px solid var(--filete); border-left:5px solid var(--oro); padding:12px 14px;
+    margin:18px 0 4px; background:var(--papel2); }
+  .cancha h3 { font:bold 12px 'Arial Narrow',Arial,sans-serif; text-transform:uppercase;
+    letter-spacing:1.5px; margin-bottom:7px; color:var(--tinta2); }
+  .cancha p { margin:6px 0; font-size:14px; }
+  .cancha .caballo { font-weight:bold; font-variant:small-caps; }
+
+  .espejismo { display:grid; grid-template-columns:30px 1fr; gap:10px; padding:9px 0;
+    border-top:1px solid var(--filete-suave); }
+  .espejismo:first-of-type { border-top:none; }
+  .cruz { font-family:'Courier New',monospace; font-weight:bold; color:var(--rojo);
+    font-size:19px; text-align:center; }
+  .espejismo p { margin:0; font-size:15px; }
+  .espejismo .mito { font-weight:bold; }
+
+  .pie { margin-top:38px; border-top:4px double var(--tinta); padding-top:12px;
+    font-size:13px; font-style:italic; color:var(--tinta2); }
+  .pie p { margin:5px 0; }
+</style>
+</head>
+<body>
+<div class="hoja">
+  <header>
+    <a class="volver" href="index.html">← VOLVER A LA TABULADA</a>
+    <div class="marca">LA <span>FIJA</span></div>
+    <div class="lema">Guía simple de patrones: qué va a hacer el caballo según lo que viene haciendo
+    · medido sobre 1,3 millones de carreras (1980–2026)</div>
+  </header>
+
+  <section class="ley">
+    <h2>UN CABALLO NO REPITE: RESPIRA.</h2>
+    <p>Lo normal es moverse hasta <span class="destacado">4 cuerpos</span> de una carrera a la otra
+    sin que signifique nada. Clavar lo de la última pasa 1 vez cada 7.</p>
+    <p>La línea de un caballo es <span class="destacado">el promedio de sus últimas 3 o 4</span> —
+    nunca la última sola. La última sola es el peor consejero del programa.</p>
+    <p>Y cuando se mueve fuerte: <span class="destacado">las subas quedan a medias,
+    las caídas se borran casi enteras.</span></p>
+    <div class="ejemplo">
+      <b>En criollo:</b> si adelantó 10 cuerpos, no esperes que repita esa carrera —
+      esperalo unos <b style="color:var(--verde)">4 arriba</b> de lo que era (retiene el 40% de la suba).
+      Si se hundió 10, no lo des por muerto — esperalo apenas
+      <b style="color:var(--rojo)">2 o 3 abajo</b> de lo que era (borra el 75% de la caída).
+      El resto, para arriba o para abajo, fue humo de un día.
+    </div>
+  </section>
+
+  <section class="bolsillo" aria-label="Los números de bolsillo">
+    <div><span class="cifra neutra">±4</span><small>lo normal.<br>No leas nada ahí</small></div>
+    <div><span class="cifra mala">−6</span><small>mal día común<br>(le pasa a 1 de cada 7)</small></div>
+    <div><span class="cifra mala">−10</span><small>fracaso de verdad<br>(1 de cada 20)</small></div>
+    <div><span class="cifra buena">+10</span><small>bomba: retiene<br>la mitad</small></div>
+  </section>
+
+  <h2 class="seccion-titulo">Las siete reglas</h2>
+  <p class="seccion-sub">Todo se mide contra su línea (el promedio de las últimas 3 o 4).</p>
+
+  <article class="regla">
+    <div class="num">1</div>
+    <div>
+      <p class="viene">Viene de hundirse feo — 10 cuerpos o más abajo de lo suyo</p>
+      <p class="veredicto sube">Rebota casi seguro</p>
+      <p>Fue un accidente, no que se rompió: 9 de cada 10 corren mejor la próxima y recuperan
+      dos tercios del pozo. Pero no vuelve entero de una — lo típico es quedar 2 o 3 cuerpos
+      abajo de lo que era por un par de carreras.</p>
+      <p class="ojo"><b>OJO:</b> casi 1 de cada 6 no corre nunca más (se rompió en serio).
+      Que esté anotado de nuevo ya es buena señal.</p>
+    </div>
+  </article>
+
+  <article class="regla">
+    <div class="num">2</div>
+    <div>
+      <p class="viene">Viene de un traspié — perdió 4 a 6 cuerpos</p>
+      <p class="veredicto mixto">Mal día común: descuento chico</p>
+      <p>No es fracaso: le pasa a 1 de cada 7 en cada carrera. Rebota 3 de cada 4 veces.
+      Descontale un par de cuerpos a la línea y listo.</p>
+      <p class="ojo"><b>OJO:</b> si ese día era el favorito (pagaba poco) y falló igual,
+      puede ser declive de verdad — a ese no le esperes el rebote.</p>
+    </div>
+  </article>
+
+  <article class="regla">
+    <div class="num">3</div>
+    <div>
+      <p class="viene">Viene de una bomba (corrió 10 arriba de lo suyo) — mirá DE DÓNDE saltó</p>
+      <p class="veredicto mixto">Hay dos bombas, y son opuestas</p>
+      <p><b style="color:var(--rojo)">BOMBA LIMPIA</b> (venía normal y saltó de la nada —
+      <i>bombalim</i> en la app): la bomba "de verdad"… y por eso mismo, no le compres la última.
+      Le queda un escalón de 3-4 sobre lo que ERA, pero contra su línea nueva (que ya subió con
+      el salto) corre ~1 abajo, y la bomba nueva sale solo 13%. Si encima venía PAREJO
+      (moviéndose de a menos de 4), la devuelve casi entera. Es la que el público paga de más.</p>
+      <p><b style="color:var(--verde)">BOMBA REBOTE</b> (el salto vino después de un fracaso —
+      <i>bombareb</i>, ⬆58/29): no es magia nueva, es el elástico volviendo del pozo… y el envión
+      sigue: corre +1,6 arriba de su línea y mete OTRA bomba 1 de cada 4. Es la que conviene seguir.</p>
+      <p class="ojo"><b>OJO:</b> la doble bomba limpia no existe — encadenarlas pasa 1 vez cada 200.
+      El mismo salto significa lo contrario según de dónde vino: pico (devolvé) o vuelta a casa (seguí).</p>
+    </div>
+  </article>
+
+  <article class="regla">
+    <div class="num">4</div>
+    <div>
+      <p class="viene">Se hundió hace dos carreras y la última fue tranquila</p>
+      <p class="veredicto sube">Le queda un rebote guardado</p>
+      <p>"La gracia del rebote dura una más": vale +2 cuerpos y pico. Es de los patrones
+      positivos más confiables que hay.</p>
+    </div>
+  </article>
+
+  <article class="regla">
+    <div class="num">5</div>
+    <div>
+      <p class="viene">Viene de la mejor carrera de su campaña</p>
+      <p class="veredicto baja">Suele devolver</p>
+      <p>Deuda de brillo: espera 1 o 2 cuerpos menos. Y desde ahí casi nunca da la sorpresa —
+      la bomba sale 1 de cada 20.</p>
+    </div>
+  </article>
+
+  <article class="regla">
+    <div class="num">6</div>
+    <div>
+      <p class="viene">Pollo: va por la segunda o tercera de su vida</p>
+      <p class="veredicto sube">Mejora solo</p>
+      <p>La segunda suele ser un cuerpo mejor que el debut. Un debut flojo no condena.</p>
+      <p class="ojo"><b>OJO:</b> con 1 o 2 corridas la línea vale poco — banda ancha,
+      puede pasar cualquier cosa.</p>
+    </div>
+  </article>
+
+  <article class="regla">
+    <div class="num">7</div>
+    <div>
+      <p class="viene">Veterano de 30 y pico de corridas para arriba</p>
+      <p class="veredicto baja">Deriva lenta para abajo</p>
+      <p>Medio cuerpo menos y sin vuelta. No esperes al de antes.</p>
+    </div>
+  </article>
+
+  <h2 class="seccion-titulo">La goma elástica</h2>
+  <p class="seccion-sub">La regla 5, completa. No mires solo la última: compará la línea de hoy
+  contra el promedio de TODA su campaña. La línea es un elástico atado a lo que el caballo
+  es de verdad — cuanto más estirado, más fuerte tira de vuelta.</p>
+
+  <div class="capas">
+    <div class="capa"><span class="cuanto" style="color:var(--rojo)">Brilla 7+ arriba</span>
+      <p>Goma al límite: fracasa 1 de cada 3, bomba casi imposible (2%). No le compres el momento.</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--rojo)">Brilla 2 a 7</span>
+      <p>Deuda: fracasa 17-23%, bomba 3-5%. Es el ▼deuda de la app.</p></div>
+    <div class="capa"><span class="cuanto">En su nivel</span>
+      <p>Goma floja: 10% bomba, 12% fracaso. Acá manda la línea sola.</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--verde)">Hundido 2 a 7</span>
+      <p>Crédito: bomba 21-32%. La goma empieza a tirar para arriba.</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--verde)">Hundido 7+</span>
+      <p><b>Bomba 45%, fracaso solo 5%.</b> El tapado clásico: corre muy abajo de lo que
+      supo ser, y casi la mitad pega el estirón. Es el 💣 de la app — y lleva su propia línea de puntos dorada: el estirón de la goma llega a +8 (💣21%), +10 (💣32%) o +13 (💣45%) según cuán hundido esté.</p></div>
+  </div>
+  <p style="font-size:14.5px">Ojo a la diferencia con la regla 1: aquella mira el porrazo de
+  UNA carrera (rebote inmediato); la goma mira la vida entera — sirve para el que se fue
+  hundiendo despacio, sin ningún porrazo que te avise.</p>
+
+  <h2 class="seccion-titulo">Los carteles de bomba: ↗ y 💣</h2>
+  <p class="seccion-sub">Dos medidores distintos. <b>↗XX%</b> = la bomba de los DADOS DE HOY
+  (viene de porrazo/rebote — lleva la línea de puntos). <b>💣XX%</b> = la bomba de la BIOGRAFÍA
+  (viene corriendo abajo de lo que fue en su vida). Pueden venir juntos: ese es el tapado doble.</p>
+
+  <div class="capas">
+    <div class="capa"><span class="cuanto" style="color:var(--verde)">↗31% PORRAZO</span>
+      <p>Su última fue un fracaso de 10+. El accidente clásico: rebota casi seguro,
+      y es el de la bomba más gorda.</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--verde)">↗25% GRACIA</span>
+      <p>El porrazo fue hace DOS carreras y la última fue tranquila. El envión no se gastó:
+      "la gracia del rebote dura una más".</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--verde)">↗24% B. REBOTE</span>
+      <p>Su última fue el salto grande (+10) saliendo de un fracaso. El elástico volvió…
+      y sigue: otra bomba 1 de cada 4.</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--verde)">↗20% TRASPIÉ</span>
+      <p>Cayó 6-10 en la última. Rebote suave, descuento chico.</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--verde)">↗19% B. SOSTENIDA</span>
+      <p>El cajón del medio de las tres bombas: metió +10 pero venía de un movimiento
+      MEDIANO (subita o caidita de 4-6) o con muy poca campaña para saber de dónde venía.
+      Ni devuelve como la limpia ni sigue como la rebote: queda +0,7 arriba y repite 1 de cada 5.</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--oro)">↗16% DEBUTANTE</span>
+      <p>El sobre cerrado: las DOS colas gordas — mete bomba 1 de cada 6 y fracasa 1 de cada 3.
+      Lleva puntos dorados Y rojos. Como no tiene línea propia, su vara es LA MEDIA DEL LOTE
+      de hoy: "bomba" = correr 6+ arriba del promedio de sus rivales.</p></div>
+    <div class="capa"><span class="cuanto" style="color:var(--rojo)">SIN FLECHA</span>
+      <p>Dos que parecen rebote y NO lo son: el <b>traspié siendo favorito</b> (el mercado
+      lo jugaba y falló igual = declive, no rebota) y la <b>bomba limpia</b> (saltó desde
+      la normalidad = devuelve, regla 3).</p></div>
+  </div>
+
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0">
+    <tr style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:1px;color:var(--tinta2);text-align:right">
+      <th style="text-align:left">EL CARTEL</th><th>mete +6</th><th>mete +10</th><th>día típico</th><th>fracasa</th></tr>
+    <tr style="border-top:1px solid var(--filete-suave)"><td><b>↗31%</b> porrazo grande</td>
+      <td style="text-align:right">1 de 3</td><td style="text-align:right">1 de 9</td>
+      <td style="text-align:right">+3,0</td><td style="text-align:right">10%</td></tr>
+    <tr style="border-top:1px solid var(--filete-suave)"><td><b>↗25%</b> gracia guardada</td>
+      <td style="text-align:right">1 de 4</td><td style="text-align:right">1 de 14</td>
+      <td style="text-align:right">+2,7</td><td style="text-align:right">8%</td></tr>
+    <tr style="border-top:1px solid var(--filete-suave)"><td><b>↗24%</b> bomba rebote</td>
+      <td style="text-align:right">1 de 4</td><td style="text-align:right">1 de 16</td>
+      <td style="text-align:right">+2,2</td><td style="text-align:right">11%</td></tr>
+    <tr style="border-top:1px solid var(--filete-suave)"><td><b>↗20%</b> traspié</td>
+      <td style="text-align:right">1 de 5</td><td style="text-align:right">1 de 18</td>
+      <td style="text-align:right">+1,4</td><td style="text-align:right">12%</td></tr>
+    <tr style="border-top:1px solid var(--filete-suave)"><td><b>💣21%</b> hundido 2-4 vs su vida</td>
+      <td style="text-align:right">1 de 5</td><td style="text-align:right">1 de 20</td>
+      <td style="text-align:right">+2,0</td><td style="text-align:right">9%</td></tr>
+    <tr style="border-top:1px solid var(--filete-suave)"><td><b>💣32%</b> hundido 4-7</td>
+      <td style="text-align:right">1 de 3</td><td style="text-align:right">1 de 10</td>
+      <td style="text-align:right">+3,4</td><td style="text-align:right">7%</td></tr>
+    <tr style="border-top:1px solid var(--filete-suave)"><td><b>💣45%</b> hundido 7+</td>
+      <td style="text-align:right">casi 1 de 2</td><td style="text-align:right">1 de 5</td>
+      <td style="text-align:right">+5,3</td><td style="text-align:right">5%</td></tr>
+  </table></div>
+
+  <p style="font-size:15px"><b>Las dos constantes del dibujo</b> (valen para TODOS los caballos):
+  entrar a la zona de arriba de la caja pasa <b>1 de cada 3</b> veces, y llegar a la punta de los
+  puntos <b>1 de cada 10</b>. Lo que cambia entre caballos es cuántos CUERPOS significa eso — y el
+  ↗% te dice cuánto de ese tercio bueno llega a bomba de verdad (+6).</p>
+
+  <p style="font-size:15px"><b>La cola mala (los puntos ROJOS, hacia atrás):</b> el espejo del
+  estirón. La llevan los cargados a fracasar, y llega hasta su día malo 1-de-10:
+  <b style="color:var(--rojo)">reprise de 1 año+</b> (fracasa 1 de 3, pozo hasta −13) ·
+  <b style="color:var(--rojo)">debutante</b> (1 de 3, −13) ·
+  <b style="color:var(--rojo)">reprise 6-12 meses</b> (1 de 4, −10) ·
+  <b style="color:var(--rojo)">deuda ▼</b> (1 de 6, −8) ·
+  <b style="color:var(--rojo)">bomba limpia ▼devuelve</b> (1 de 6, −8).
+  La carrera trampa se dibuja sola: favorito con cola roja larga + uno de atrás con cola dorada.</p>
+
+  <p style="font-size:15px"><b>La escalera del rebotero</b> (el de la línea de puntos), de cada 10 veces:
+  <b>1</b> vuelve a fracasar · <b>2</b> quedan abajo de su línea · <b>4</b> rebotan sin bomba
+  (hasta el tick del 60%) · <b>3</b> meten bomba — y de esos 3, <b>1</b> llega a la punta de los
+  puntos. El que pasa el tick casi siempre sigue de largo hasta la bomba.</p>
+
+  <p style="font-size:15px"><b>¿Y cuándo devuelve el rebotero?</b> En la próxima casi nunca — su
+  lado malo es NORMAL (fracasa 8-14%, día malo 1-de-10 de −5 a −7,5: calcado del común; por eso
+  no lleva cola roja). El rebotero paga con el TIEMPO: la gracia dura ~3 carreras y en la 4ª
+  vuelve la deuda. Y la señal negra: si en vez de rebotar VUELVE a fracasar, el porrazo no era
+  accidente — es declive o lesión, y muchos no corren más.</p>
+
+  <div class="cancha" style="border-left-color:var(--rojo)">
+    <h3>Las tres reglas para no leer mal el cartel</h3>
+    <p><b>1. El % es de +6, no de +10.</b> El 💣32% mete +6 una de cada 3… pero el bombazo
+    de +10 es una de cada 10. Lo más probable siempre es su día típico (+3 y pico).</p>
+    <p><b>2. Bomba no es ganar.</b> El +6 lo deposita en su línea +6: fijate si ESO cruza la
+    raya roja de la carrera. A 3 cuerpos de la pelea, el cartel es jugable; a 9 cuerpos, es
+    un espejismo — necesita el 1-de-10 y que encima fallen los de adelante.</p>
+    <p><b>3. El motor ya la contó.</b> La probabilidad de ganar de La Jugada ya incluye sus
+    bombas (los dados se tiran 2.000 veces). No sumes el cartel encima: sería contarla dos veces.</p>
+    <p><b>El dato escondido:</b> el 💣 es el caballo más SEGURO del programa — fracasa menos que
+    nadie (5-9%). Para marcador es oro casi siempre; para ganador, solo si la bomba llega a la raya.</p>
+  </div>
+
+  <h2 class="seccion-titulo">La reprise</h2>
+  <p class="seccion-sub">El que vuelve de parado. La reprise no rompe al caballo:
+  le ensancha la banda — puede pasar de todo, y lo malo pesa más cuanto más largo el parate.</p>
+
+  <div class="capas">
+    <div class="capa"><span class="cuanto">Hasta 3 meses</span>
+      <p>Como si nada. No le descuentes.</p></div>
+    <div class="capa"><span class="cuanto">De 4 a 12 meses</span>
+      <p>Descontale 1 cuerpo y agrandá la banda: la mitad corre su línea igual,
+      pero 1 de cada 5 fracasa.</p></div>
+    <div class="capa"><span class="cuanto">Más de un año</span>
+      <p>Descontale 2 o 3, y sabé que 1 de cada 3 fracasa feo. La línea vieja está vencida:
+      ese caballo puede ser otro.</p></div>
+  </div>
+
+  <div class="secuencia">
+    <div class="paso"><span class="cual">1ª</span><small>la mala:<br>llega verde</small></div>
+    <div class="paso"><span class="cual">2ª</span><small>ya corre<br>su línea</small></div>
+    <div class="paso"><span class="cual">3ª</span><small>la vencida:<br>la supera</small></div>
+  </div>
+  <p style="font-size:14.5px">Si el parate fue larguísimo (más de un año y medio),
+  el caballo entero recién aparece en la 4ª.</p>
+
+  <div class="cancha">
+    <h3>Visto en la cancha — San Isidro, 8 de julio de 2026</h3>
+    <p><span class="caballo">Full Grateful</span> (11ª): 20 meses parado y solo 2 corridas en la vida.
+    En el papel era lejos la mejor línea; la línea era vieja y corta, y quedó 3º.
+    <em>Reprise larga + poca campaña = nadie sabe nada, por buena que se vea la línea.</em></p>
+    <p><span class="caballo">The Last Mad</span> (10ª): 7 meses parada, corrió su línea de siempre…
+    y ganó, porque las dos mejores del lote también reprisaban y les tocó la cola mala.
+    <em>Cuando las mejores líneas del lote reprisan, gana el que solo repite lo suyo.</em></p>
+  </div>
+
+  <h2 class="seccion-titulo">Los espejismos</h2>
+  <p class="seccion-sub">Cosas que se ven clarito en el programa y no significan nada.
+  Acá se pierde la plata.</p>
+
+  <div class="espejismo"><span class="cruz">✗</span>
+    <p><span class="mito">El serrucho</span> (sube-baja-sube-baja): aparece en 1 de cada 3 carreras
+    y no dice absolutamente nada. Leer el serrucho es leer ruido.</p></div>
+  <div class="espejismo"><span class="cruz">✗</span>
+    <p><span class="mito">"Viene subiendo escalón a escalón":</span> el que subió 3 seguidas
+    no sigue subiendo — al contrario, suele devolver.</p></div>
+  <div class="espejismo"><span class="cruz">✗</span>
+    <p><span class="mito">"Hizo su récord, está en su mejor momento":</span> el récord personal
+    no vale más que cualquier suba. Y ver la regla 5.</p></div>
+  <div class="espejismo"><span class="cruz">✗</span>
+    <p><span class="mito">"Descansado 3 a 6 meses viene fresco":</span> el descanso medio
+    ni suma ni resta. Lo que parece frescura es otra cosa.</p></div>
+  <div class="espejismo"><span class="cruz">✗</span>
+    <p><span class="mito">"Dos caídas seguidas: está terminado":</span> no es peor que una sola.
+    El derrumbe en cámara lenta no existe — lo que sí anuncia es riesgo de que lo paren.</p></div>
+
+  <footer class="pie">
+    <p>Medido sobre 1,3 millones de carreras de Palermo, San Isidro y La Plata (1980–2026).
+    Cada regla vale igual en las cinco décadas, y fue verificada por tres analistas independientes
+    que no conocían las teorías de la casa.</p>
+    <p>Son promedios: el burro no leyó la estadística.</p>
+  </footer>
+</div>
+</body>
+</html>

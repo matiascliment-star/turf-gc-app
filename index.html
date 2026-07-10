@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turf GC — La Tabulada</title>
+<style>
+  :root { --papel:#f0e9d9; --papel2:#e9e1cd; --tinta:#181410; --tinta2:#4a4238;
+          --rojo:#a8231b; --verde:#1e6b3a; --oro:#8a6d1f; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--papel); color:var(--tinta);
+         font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:1.45;
+         background-image: radial-gradient(rgba(120,100,60,.06) 1px, transparent 1px);
+         background-size: 4px 4px; }
+  .condensada { font-family:'Arial Narrow','Helvetica Neue',Arial,sans-serif; }
+
+  /* cabecera tipo diario */
+  header { text-align:center; padding:14px 10px 8px; border-bottom:4px double var(--tinta); }
+  header .marca { font-size:34px; font-weight:bold; letter-spacing:3px; }
+  header .marca span { color:var(--rojo); }
+  header .lema { font-size:12px; font-style:italic; color:var(--tinta2); letter-spacing:1px; }
+  nav { display:flex; justify-content:center; gap:0; border-bottom:2px solid var(--tinta);
+        background:var(--papel); position:sticky; top:0; z-index:5; }
+  nav button { background:none; border:none; border-right:1px solid var(--tinta);
+               padding:9px 22px; font:bold 14px 'Arial Narrow',Arial,sans-serif;
+               letter-spacing:2px; cursor:pointer; color:var(--tinta); text-transform:uppercase; }
+  nav button:first-child { border-left:1px solid var(--tinta); }
+  nav button.on { background:var(--tinta); color:var(--papel); }
+  main { max-width:980px; margin:0 auto; padding:14px 12px 60px; }
+
+  .controles { display:flex; gap:8px; margin:4px 0 16px; flex-wrap:wrap; align-items:center; justify-content:center; }
+  input,select { background:#fffdf5; color:var(--tinta); border:1px solid var(--tinta2);
+                 padding:7px 10px; font:14px Georgia,serif; }
+  .boton { background:var(--tinta); color:var(--papel); border:none; padding:8px 20px;
+           font:bold 13px 'Arial Narrow',Arial,sans-serif; letter-spacing:2px; cursor:pointer; text-transform:uppercase; }
+
+  /* botonera de carreras */
+  .nav-carr { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:14px; }
+  .nav-carr button { background:var(--papel); border:2px solid var(--tinta); font:bold 15px Georgia,serif;
+                     width:42px; height:38px; cursor:pointer; }
+  .nav-carr button:hover { background:var(--tinta); color:var(--papel); }
+  /* carrera estilo revista */
+  .carrera { border:2px solid var(--tinta); margin-bottom:16px; background:#f6f0e2;
+             box-shadow:3px 3px 0 rgba(24,20,16,.25); }
+  .carrera.cerrada .c-resto { display:none; }
+  .c-flecha { align-self:center; padding:0 12px; font-size:18px; color:var(--tinta2); }
+  .c-cab { display:flex; align-items:stretch; border-bottom:2px solid var(--tinta); cursor:pointer; }
+  .c-nro { background:var(--tinta); color:var(--papel); font-size:38px; font-weight:bold;
+           padding:6px 16px; display:flex; align-items:center; font-family:Georgia,serif; }
+  .c-nro small { font-size:16px; vertical-align:super; }
+  .c-datos { padding:8px 14px; flex:1; }
+  .c-datos .dist { font-size:22px; font-weight:bold; letter-spacing:1px; }
+  .c-datos .meta { font-size:12.5px; color:var(--tinta2); text-transform:uppercase; letter-spacing:1px; }
+  .c-cond { font-size:13px; font-style:italic; padding:7px 14px; border-bottom:1px solid var(--tinta2);
+            color:var(--tinta2); }
+  .jugada { margin:10px 12px; border:2px solid var(--rojo); padding:8px 12px; background:#fdf6ee; }
+  .jugada h4 { color:var(--rojo); font-size:13px; letter-spacing:2px; margin-bottom:4px;
+               font-family:'Arial Narrow',Arial,sans-serif; text-transform:uppercase; }
+  .jugada .fila-j { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; font-size:14.5px; padding:2px 0; }
+  .jugada .pj { font-weight:bold; font-size:16px; }
+  .sintesis { margin:0 12px 10px; font-size:13.5px; font-style:italic; color:var(--tinta2);
+              border-left:3px solid var(--tinta2); padding-left:10px; }
+
+  /* cada caballo es una franja; sus carreras corren de izquierda a derecha, como la revista */
+  .cab { margin:0 12px 12px; border:1px solid var(--tinta); background:#fbf7ec; }
+  .cab-bar { background:var(--tinta); color:var(--papel); display:flex; align-items:center;
+             gap:10px; padding:5px 10px; }
+  .mandil { background:var(--papel); color:var(--tinta); font-weight:bold; min-width:26px;
+            height:26px; display:flex; align-items:center; justify-content:center;
+            border-radius:3px; font-size:15px; }
+  .cab-bar .nombre { font-weight:bold; letter-spacing:1px; font-size:16px; flex:1; }
+  .cab-bar .kgj { font-size:12px; color:#cfc7b3; text-align:right; line-height:1.25; }
+  .cab-bar .prob { font-size:19px; font-weight:bold; color:#f2c14e; min-width:58px; text-align:right; }
+  .pedigri { font-size:12px; color:var(--tinta2); padding:4px 10px; font-style:italic;
+             border-bottom:1px dotted #b9ac8e; }
+  .cab-cuerpo { padding:6px 10px; }
+  .lineas { display:flex; overflow-x:auto; gap:8px; padding:4px 0; align-items:flex-start; }
+  .lncard { flex:0 0 auto; width:220px; border:1px solid #b9ac8e; background:#fffdf5;
+            font-size:12.5px; line-height:1.4; }
+  .lncard .ln-cab { background:var(--papel2); border-bottom:1px solid #b9ac8e; padding:3px 6px;
+                    font:bold 12px 'Arial Narrow',Arial,sans-serif; letter-spacing:.5px;
+                    height:22px; overflow:hidden; }
+  .lncard .ln-tipo { padding:2px 6px 0; font:bold 11px 'Arial Narrow',Arial,sans-serif;
+                     letter-spacing:.5px; text-transform:uppercase; min-height:16px;
+                     white-space:normal; line-height:1.25; }
+  .lncard .ln-pos { padding:3px 6px; font-size:13px; border-bottom:1px dotted #d5c9a8;
+                    min-height:44px; }
+  .lncard .ln-pos b.g { color:var(--verde); }
+  .lncard .ln-lleg { padding:2px 6px 4px; color:var(--tinta2); border-top:1px dotted #d5c9a8; }
+  .lncard .ln-des { padding:2px 6px 5px; font-style:italic; color:var(--tinta2);
+                    border-top:1px dotted #d5c9a8; }
+  .lineas { font-family:'Courier New',monospace; font-size:12.5px; }
+  .lineas .ln { padding:3px 0; border-bottom:1px dotted #b9ac8e; }
+  .lineas .ln b.g { color:var(--verde); }
+  .coment { font-size:13.5px; padding:6px 0 2px; }
+  .coment i { color:var(--tinta2); }
+  .etiqueta { font:bold 11px 'Arial Narrow',Arial,sans-serif; letter-spacing:1px; padding:2px 7px;
+              border-radius:2px; text-transform:uppercase; }
+  .et-joya { background:var(--oro); color:#fff; }
+  .et-valor { background:var(--verde); color:#fff; }
+  .et-peligro { background:var(--rojo); color:#fff; }
+  .precio { font-size:12.5px; color:var(--tinta2); }
+
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th { text-align:left; border-bottom:2px solid var(--tinta); padding:5px 7px;
+       font:bold 12px 'Arial Narrow',Arial,sans-serif; letter-spacing:1px; text-transform:uppercase; }
+  td { padding:5px 7px; border-bottom:1px dotted #b9ac8e; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .link { color:var(--rojo); cursor:pointer; font-weight:bold; }
+  .cab-bar .cabn { cursor:pointer; }
+  .lnk2 { cursor:pointer; }
+  .dim { color:var(--tinta2); } .chico { font-size:13.5px; color:var(--tinta2); }
+  .aviso { text-align:center; padding:30px; font-style:italic; color:var(--tinta2); }
+  .gana { color:var(--verde); font-weight:bold; }
+  .scroll { overflow-x:auto; }
+  .panel { border:2px solid var(--tinta); background:#f6f0e2; padding:12px; box-shadow:3px 3px 0 rgba(24,20,16,.25); }
+  table.panorama th, table.panorama td { white-space:nowrap; }
+  table.panorama tr:nth-child(even) td { background:rgba(120,100,60,.06); }
+  @media (max-width: 700px){
+    .betq { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.2; }
+  }
+  @media(max-width:640px){
+    header .marca{font-size:26px} .c-nro{font-size:28px;padding:4px 10px}
+    .c-datos .dist{font-size:17px} main{padding:8px 6px 40px}
+    .cab{margin:0 6px 10px} .jugada{margin:8px 6px} nav button{padding:8px 12px;letter-spacing:1px}
+  }
+  /* LA BOLETA (10/07/26, pedido Matias): seleccion de jugadas pegada abajo */
+  .btn-jugar { background:var(--papel); border:1.5px solid var(--tinta); font:bold 12px Georgia,serif;
+    width:20px; height:20px; line-height:1; margin-right:4px; cursor:pointer; border-radius:3px;
+    padding:0; vertical-align:middle; flex:0 0 auto }
+  .btn-jugar.on { background:var(--tinta); color:var(--papel) }
+  #boletaFab { position:fixed; bottom:14px; right:12px; z-index:61; display:none;
+    background:var(--papel); border:2px solid var(--tinta); border-radius:20px;
+    font:bold 15px Georgia,serif; padding:6px 12px; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.25) }
+  #boletaBar { position:fixed; bottom:0; left:0; right:0; background:var(--papel);
+    border-top:3px solid var(--tinta); padding:7px 10px; z-index:60;
+    box-shadow:0 -2px 10px rgba(0,0,0,.2); font-size:14px; display:none }
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">TURF <span>GC</span></div>
+  <div class="lema">La tabulada del estudio — líneas, patrones y jugadas · archivo 1978–hoy</div>
+</header>
+<nav>
+  <button id="bHoy" class="on" onclick="ir('hoy')">Programa</button>
+  <button id="bCaballo" onclick="ir('caballo')">Ejemplar</button>
+  <button id="bCamadas" onclick="ir('camadas')">Camadas</button>
+  <button id="bFija" onclick="location.href='guia.html'" title="Guía de patrones" style="color:var(--rojo)">La Fija</button>
+  <button id="bRev" onclick="location.href='revistas.html'" title="Archivo de la Revista Palermo">Revistas</button>
+  <button id="bLetra" onclick="letra()" title="Agrandar letra" style="font-size:16px">A+</button>
+</nav>
+<main>
+  <div id="vHoy">
+    <div class="controles">
+      <input type="date" id="fecha">
+      <select id="hipo">
+        <option value="">Todos</option>
+        <option value="PAL">Palermo</option><option value="SIS">San Isidro</option>
+        <option value="LPA">La Plata</option>
+      </select>
+      <button class="boton" onclick="cargarDia()">Ver programa</button>
+      <button class="boton" style="background:var(--rojo)" onclick="document.getElementById('leyenda').style.display = document.getElementById('leyenda').style.display==='none'?'':'none'">ℹ️ Patrones</button>
+    </div>
+    <div id="leyenda" style="display:none;margin-bottom:14px" class="panel">
+      <div style="font:bold 13px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;margin-bottom:6px">LA REGLA DE CUERPOS (una sola para todas las camadas y edades)</div>
+      <div style="font-size:14px;line-height:1.6;margin-bottom:12px">
+        Toda perf/rating se mide en cuerpos sobre una única vara. Para leerla rápido, los niveles típicos de cada categoría:
+        <b>+10</b> = Gran Premio (G1) · <b>+5</b> = Clásico · <b>+2</b> = Handicap ·
+        <b>−1 a −3</b> = Ganadores de 2/3 · <b>−5</b> = Perdedores · <b>−15</b> = el fondo.
+        Ej.: perf −9 = perdedor flojo; +3 = buen animal de handicap. La diferencia entre dos perfs = cuerpos esperados entre esos caballos.
+        <br><span class="dim">⚓ Los 2 años del momento miden solo entre ellos hasta que se crucen con los mayores (agosto) — la app lo avisa caballo por caballo.</span>
+      </div>
+      <div style="font:bold 13px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;margin-bottom:6px">LOS PATRONES (auditados 07/07/26: 719 mil actuaciones, medidos EN cada carrera, no al final de la campaña)</div>
+      <div style="font-size:14px;line-height:1.6">
+        <b>🎯 REPETIDOR (3%)</b> — el único con don propio: queda a ±2,5 de su línea el 46% (los demás 35%) y fracasa un tercio menos. Banda angosta y bancable — pero el don vence a las ~6 corridas.<br>
+        <b>🪦 SOBRE-CASTIGADO (EN DECLIVE)</b> — dos caídas de 4+ seguidas. Si vuelve a correr, <b>sube el 85%</b> (media +7 cuerpos): la línea quedó muy castigada y rebota. El riesgo real es que no vuelva (rotura/retiro).<br>
+        <b>🎲 LOTERÍA (2%)</b> — errático de verdad: su próximo salto tiene 23% más de desvío y fracasa 22%. La línea vale poco — para cualquier lado.<br>
+        <b>🔁 CÍCLICO (18%) · 🪚 SERRUCHO (19%) · 📈 ESCALADOR (10%)</b> — descriptivos de la forma de la campaña, pero SIN don predictivo propio: el rebote post-fracaso (8 de cada 10 sube), la reversión (66%) y el riesgo de racha al límite (fracasa ~29%, casi el doble) son de TODOS los caballos en ese estado, no de la clase. El motor ya los usa por estado.<br>
+        <span class="dim">El resto (~46%) sin patrón — se mueve igual que el promedio. Señales: ⚠️ = zona de fracaso · 💰 = rebote esperado · 🎯 dorado en La Jugada = pick confiable con 5+ cuerpos de ventaja (58% ganador, 91% marcador).</span>
+      </div>
+    </div>
+    <div id="dia"></div>
+  </div>
+
+  <div id="vCaballo" style="display:none">
+    <div class="controles">
+      <input type="text" id="busca" placeholder="Nombre del ejemplar…" style="min-width:250px"
+             onkeydown="if(event.key==='Enter')buscar()">
+      <button class="boton" onclick="buscar()">Buscar</button>
+    </div>
+    <div id="fichaCab"></div>
+  </div>
+
+  <div id="vCamadas" style="display:none">
+    <div class="controles">
+      <select id="selCamada" onchange="camada()"></select>
+      <select id="selSexo" onchange="camada()">
+        <option value="">Machos y hembras</option>
+        <option value="M">Machos</option>
+        <option value="H">Hembras</option>
+      </select>
+    </div>
+    <div id="tablaCamada"></div>
+    <div id="histCamadas"></div>
+  </div>
+</main>
+
+<script>
+const SB = 'https://cqxqleesxgvuuyasmmyx.supabase.co/rest/v1/';
+const KEY = 'sb_publishable_vbJdk0HcvpJBqw5TaQEQWg__dgq_Qt2';
+const q = async (path, reint = 2) => {
+  for (let i = 0; ; i++){
+    const r = await fetch(SB + path, { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
+    if (r.ok) return r.json();
+    const t = await r.text();
+    // 57014 = timeout de Postgres (base ocupada): esperar y reintentar solo
+    if (i < reint && /57014|timeout/.test(t)){ await new Promise(z => setTimeout(z, 1200 * (i + 1))); continue; }
+    throw new Error(t);
+  }
+};
+const esc = s => (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const fnum = (v,d=1) => v==null ? '—' : (+v).toFixed(d);
+const hoyISO = () => new Date(Date.now()-3*3600e3).toISOString().slice(0,10);
+const ICONO = {REPETIDOR:'🎯', CICLICO:'🔁', ESCALADOR:'📈', SERRUCHO:'🪚', LOTERIA:'🎲', EN_DECLIVE:'🪦'};
+let PADRES_DEBUT = null;
+async function getPadresDebut(){
+  if (!PADRES_DEBUT){
+    try { PADRES_DEBUT = await (await fetch('padres_debut.json')).json(); }
+    catch(e){ PADRES_DEBUT = {}; }
+  }
+  return PADRES_DEBUT;
+}
+const HIPOS = {PAL:'PALERMO', SIS:'SAN ISIDRO', LPA:'LA PLATA'};
+// norma de velocidad por distancia de apronte (medida de la base, m/s)
+const NORMA_APRONTE = d => d<550?16.37 : d<650?16.39 : d<750?16.26 : d<900?16.16 : d<1100?16.05 : d<1300?15.60 : 15.35;
+function apronteAntes(ejs, fechaISO){
+  // la revista fecha los aprontes con el dia de la carrera que preparan: match EXACTO
+  if (!ejs) return null;
+  const del = ejs.filter(e => e.fecha === fechaISO && e.velocidad != null);
+  if (!del.length) return null;
+  return del.find(e => /partida/i.test(e.tipo || '')) || del[0];
+}
+const fmtApronte = e => `${e.distancia_m}m en ${(+e.tiempo_seg).toFixed(1)}" (${(+e.velocidad).toFixed(1)} m/s)`;
+
+// letra grande para papas que no ven un choto: 3 niveles, queda guardado
+const ZOOMS = [1, 1.25, 1.5];
+function aplicarLetra(){
+  const n = +(localStorage.getItem('letra') || 0);
+  document.body.style.zoom = ZOOMS[n];
+  const b = document.getElementById('bLetra');
+  if (b) b.textContent = ['A+','A++','A#'][n];
+}
+function letra(){
+  localStorage.setItem('letra', ((+(localStorage.getItem('letra') || 0)) + 1) % ZOOMS.length);
+  aplicarLetra();
+}
+
+// diagnostico provisorio con 3-7 carreras: "pinta para..."
+function pintaPara(ps){
+  if (!ps || ps.length < 3) return null;
+  const perfs = ps.slice(0, 6).map(p => +p.performance).filter(v => !isNaN(v)).reverse(); // cronologico
+  if (perfs.length < 3) return null;
+  const d = [];
+  for (let i = 1; i < perfs.length; i++) d.push(perfs[i] - perfs[i-1]);
+  const fmt = d.map(x => (x>0?'+':'') + x.toFixed(1)).join(', ');
+  const absd = d.map(Math.abs);
+  if (Math.max(...absd) <= 2.5) return {t:'🎯 REPETIDOR', r:'sus carreras son casi calcadas ('+fmt+')'};
+  if (d.every(x => x >= 0.5)) return {t:'📈 ESCALADOR', r:'sube escalón por escalón ('+fmt+') — con la racha estirada fracasa ~29% (el doble de lo normal)'};
+  if (d.every(x => x <= -0.5)) return {t:'📉 EN BAJADA', r:'cae carrera a carrera ('+fmt+')'};
+  let alterna = d.length >= 2;
+  for (let i = 1; i < d.length; i++)
+    if (!(d[i]*d[i-1] < 0 && absd[i] >= 0.5 && absd[i-1] >= 0.5)) alterna = false;
+  if (alterna) return {t:'🪚 SERRUCHO', r:'alterna una buena y una mala ('+fmt+') — la próxima iría al revés, como casi todos (66%)'};
+  if (Math.max(...absd) >= 7) return {t:'🎲 LOTERÍA', r:'saltos enormes entre carreras ('+fmt+')'};
+  return null;
+}
+
+function ir(v){
+  for (const [id,btn] of [['vHoy','bHoy'],['vCaballo','bCaballo'],['vCamadas','bCamadas']]){
+    document.getElementById(id).style.display='none';
+    document.getElementById(btn).classList.remove('on');
+  }
+  document.getElementById('v'+v[0].toUpperCase()+v.slice(1)).style.display='';
+  document.getElementById('b'+v[0].toUpperCase()+v.slice(1)).classList.add('on');
+  VISTA = v;
+}
+
+// ---- pila de navegacion: saltar a un ejemplar / carrera pasada y VOLVER a donde estabas ----
+let VISTA = 'hoy', FICHA_ESTADO = null;  // FICHA_ESTADO = que muestra fichaCab: busqueda | caballo | ch
+const NAV = [];
+function navPush(){
+  NAV.push({vista: VISTA, ficha: VISTA==='caballo' ? FICHA_ESTADO : null, y: window.scrollY});
+  if (NAV.length > 60) NAV.shift();
+}
+async function volver(){
+  const prev = NAV.pop();
+  if (!prev){ ir('hoy'); window.scrollTo(0, 0); return; }
+  if (prev.vista === 'caballo' && prev.ficha){
+    if (prev.ficha.tipo === 'caballo') await verCaballo(prev.ficha.nombre, true, prev.ficha.rp);
+    else if (prev.ficha.tipo === 'ch') await verCarreraHistorica(prev.ficha.fecha, prev.ficha.hipo, prev.ficha.nro, true);
+    else if (prev.ficha.tipo === 'busqueda'){ ir('caballo'); document.getElementById('busca').value = prev.ficha.q; await buscar(prev.ficha.q, true); }
+    else ir('caballo');
+  } else ir(prev.vista);
+  window.scrollTo(0, prev.y);
+}
+// ancla interna: del nombre en panorama/bandas/jugada a su tabulada (misma pagina, sin cambiar de tab)
+function verTabulada(hipo, nro, mandil){
+  const el = document.getElementById(`tab-${hipo}-${nro}-${mandil}`);
+  if (!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.style.outline = '3px solid var(--rojo)';
+  setTimeout(() => { el.style.outline = ''; }, 1200);
+}
+
+let ESTADO_CAMADAS = {};
+// ---- LA BOLETA: anotar jugadas y leerlas de un tiron al llamar ----
+let BOLETA = {};
+const bKey = () => 'boleta_' + (document.getElementById('fecha')?.value||'');
+function bLoad(){ try { BOLETA = JSON.parse(localStorage.getItem(bKey())||'{}'); }
+  catch(e){ BOLETA = {}; } bBar();
+  const f = document.getElementById('fecha')?.value; if (!f) return;
+  q(`turf_boleta?fecha=eq.${f}&select=data`).then(rs => {
+    if (rs && rs.length && rs[0].data){ BOLETA = rs[0].data;
+      localStorage.setItem(bKey(), JSON.stringify(BOLETA)); bBar(); bMarcar(); }
+  }).catch(()=>{}); }
+function bMarcar(){ document.querySelectorAll('.btn-jugar').forEach(b => {
+  const [n, m] = (b.dataset.b||'').split('|');
+  const on = bSel(+n, m); b.classList.toggle('on', on); b.textContent = on ? '✓' : '+'; }); }
+function bPush(){ const f = document.getElementById('fecha')?.value; if (!f) return;
+  fetch(SB + 'turf_boleta?on_conflict=fecha', { method: 'POST',
+    headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates' },
+    body: JSON.stringify([{ fecha: f, data: BOLETA, actualizado: new Date().toISOString() }])
+  }).catch(()=>{}); }
+function bSel(nro, m){ return (BOLETA[nro]||[]).some(x => x.m === m); }
+function btnJ(nro, f){ const m = String(f.mandil ?? '?');
+  const nom = (f.caballo||'').replace(/[\\'"<>]/g,'');
+  const on = bSel(nro, m);
+  return `<button class="btn-jugar${on?' on':''}" data-b="${nro}|${m}" `+
+    `onclick="bTog(event,${nro},'${m}','${nom}')" title="anotar en la boleta">${on?'✓':'+'}</button>`; }
+function bTog(ev, nro, m, nom){ ev.stopPropagation(); ev.preventDefault();
+  const arr = BOLETA[nro] = (BOLETA[nro]||[]);
+  const i = arr.findIndex(x => x.m === m);
+  if (i >= 0) arr.splice(i, 1); else arr.push({m, n: nom});
+  if (!arr.length) delete BOLETA[nro];
+  localStorage.setItem(bKey(), JSON.stringify(BOLETA)); bPush();
+  document.querySelectorAll(`[data-b="${nro}|${m}"]`).forEach(b => {
+    b.classList.toggle('on', i < 0); b.textContent = i < 0 ? '✓' : '+'; });
+  bBar(); }
+function bTxt(){ const f = document.getElementById('fecha')?.value||'';
+  const h = document.getElementById('hipo')?.value||'';
+  const nros = Object.keys(BOLETA).map(Number).sort((a,b)=>a-b);
+  return `BOLETA ${h} ${f}\n` + nros.map(n =>
+    `${n}ª: ` + BOLETA[n].map(x => `${x.m} ${x.n}`).join(' · ')).join('\n'); }
+function bCopiar(btn){ navigator.clipboard.writeText(bTxt()).then(()=>{
+  btn.textContent = 'copiado ✓'; setTimeout(()=>{ btn.textContent = 'copiar'; }, 1500); }); }
+function bVaciar(){ BOLETA = {}; localStorage.removeItem(bKey()); bPush(); bBar();
+  document.querySelectorAll('.btn-jugar.on').forEach(b => { b.classList.remove('on'); b.textContent = '+'; }); }
+function bToggleVis(){ localStorage.setItem('boleta_vis',
+  localStorage.getItem('boleta_vis')==='0' ? '1' : '0'); bBar(); }
+function bBar(){ const el = document.getElementById('boletaBar');
+  const fab = document.getElementById('boletaFab'); if (!el) return;
+  const nros = Object.keys(BOLETA).map(Number).sort((a,b)=>a-b);
+  const tot = nros.reduce((s,n)=>s+BOLETA[n].length, 0);
+  const vis = localStorage.getItem('boleta_vis') !== '0';
+  if (fab){ fab.style.display = vis ? 'none' : 'block';
+    fab.textContent = tot ? `🎫 ${tot}` : '🎫'; }
+  if (!vis){ el.style.display = 'none'; document.body.style.paddingBottom = '56px'; return; }
+  el.style.display = 'block'; document.body.style.paddingBottom = '80px';
+  const btnOcultar = '<button class="boton" style="padding:2px 10px" onclick="bToggleVis()">ocultar</button>';
+  if (!nros.length){
+    el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+      '<b style="letter-spacing:1px;font-family:\'Arial Narrow\',Arial,sans-serif">🎫 BOLETA</b>' +
+      '<span class="chico" style="color:var(--tinta2)">vacía — tocá el <b>+</b> al lado de cualquier caballo para anotarlo (queda guardada por fecha)</span>' +
+      '<span style="flex:1"></span>' + btnOcultar + '</div>';
+    return; }
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+    '<b style="letter-spacing:1px;font-family:\'Arial Narrow\',Arial,sans-serif">🎫 BOLETA</b>' +
+    nros.map(n => `<span style="white-space:nowrap"><b>${n}ª:</b> ` +
+      BOLETA[n].map(x => `<b style="border:1.5px solid var(--tinta);padding:0 5px;margin:0 1px;background:var(--papel2);cursor:pointer" title="${x.n} — tocar para sacar" onclick="bTog(event,${n},'${x.m}','${x.n}')">${x.m}</b>`).join('') +
+      ` <span class="chico" style="color:var(--tinta2)">${BOLETA[n].map(x=>x.n.split(' ')[0]).join('·')}</span></span>`).join('') +
+    '<span style="flex:1"></span>' +
+    '<button class="boton" style="padding:2px 10px" onclick="bCopiar(this)">copiar</button>' +
+    btnOcultar +
+    '<button class="boton" style="padding:2px 10px;background:var(--rojo)" onclick="bVaciar()">vaciar</button></div>'; }
+
+async function cargarDia(){
+  bLoad();
+  try {
+    const ec = await q('turf_camadas_estado?select=camada,puentes');
+    for (const e of ec) ESTADO_CAMADAS[e.camada] = e.puentes;
+  } catch(e) {}
+  const f = document.getElementById('fecha').value || hoyISO();
+  const h = document.getElementById('hipo').value;
+  const cont = document.getElementById('dia');
+  cont.innerHTML = '<div class="aviso">Abriendo la revista…</div>';
+  let filtro = `turf_carreras?fecha=eq.${f}&order=hipodromo,nro&select=id,fecha,hipodromo,nro,hora,premio,distancia,pista,estado,condicion,premios,video_url,favoritos_revista,apuestas`;
+  if (h) filtro += `&hipodromo=eq.${h}`;
+  const carreras = await q(filtro);
+  if (!carreras.length){ cont.innerHTML = '<div class="aviso">No hay carreras cargadas para esa fecha.</div>'; return; }
+  cont.innerHTML = '';
+  const nav = document.createElement('div');
+  nav.className = 'nav-carr';
+  cont.appendChild(nav);
+  // JUGADAS DEL DIA: el pick de cada carrera con su precio minimo + tapados
+  try {
+    let fp = `turf_pronosticos?fecha=eq.${f}&motor=eq.v3&select=hipodromo,carrera_nro,mandil,caballo,prob,precio_minimo,senal&order=carrera_nro`;
+    if (h) fp += `&hipodromo=eq.${h}`;
+    const pros = await q(fp);
+    if (pros.length){
+      const porC = {};
+      for (const p of pros) (porC[p.hipodromo+'|'+p.carrera_nro] = porC[p.hipodromo+'|'+p.carrera_nro] || []).push(p);
+      const multi = carreras.some(x=>x.hipodromo!==carreras[0].hipodromo);
+      let filasJ = '';
+      for (const c of carreras){
+        const lote = porC[c.hipodromo+'|'+c.nro];
+        if (!lote) continue;
+        lote.sort((a,b)=>b.prob-a.prob);
+        const pick = lote[0];
+        const et = (multi ? c.hipodromo[0] : '') + c.nro;
+        filasJ += `<div class="fila-j" style="cursor:pointer" onclick="abrirNro('${c.hipodromo}',${c.nro})">
+          <b style="min-width:26px">${et}ª</b><span class="mandil" style="border:1px solid var(--tinta)">${esc(pick.mandil??'?')}</span><span class="pj">${esc(pick.caballo)}</span>
+          <span>gana ${(pick.prob*100).toFixed(0)}%</span>
+          <span class="precio">jugar si paga +$${fnum(+pick.precio_minimo,2)}</span>
+          ${pick.senal==='JOYA'?'<span class="etiqueta et-joya">🎯 Joya</span>':''}${pick.senal==='VALOR'?'<span class="etiqueta et-valor">💰 Tapado</span>':''}</div>`;
+        for (const t of lote.slice(1)) if (t.senal==='VALOR')
+          filasJ += `<div class="chico" style="cursor:pointer;padding:0 0 4px 30px" onclick="abrirNro('${c.hipodromo}',${c.nro})">
+            💰 tapado en la ${et}ª: (${esc(t.mandil??'?')}) ${esc(t.caballo)} — viene de fracaso grande, solo si paga bien arriba de $${fnum(+t.precio_minimo,2)}</div>`;
+      }
+      // COMBINADAS: doble/triplo/pick4/5y6 que arrancan en cada carrera,
+      // armadas con los candidatos del modelo (dominada=pick solo, abierta=2-3)
+      const armarLeg = lote => {
+        if (!lote || !lote.length) return null;
+        if (+lote[0].prob >= 0.5) return [lote[0]];
+        const sel = []; let acc = 0;
+        for (const p of lote){ sel.push(p); acc += +p.prob; if (acc >= 0.7 || sel.length >= 3) break; }
+        return sel;
+      };
+      const plata = s => (+String(s).replace(/\./g,'')).toLocaleString('es-AR');
+      let filasC = '';
+      for (const c of carreras){
+        const ta = (c.apuestas||'').toUpperCase();
+        const ic = ta.indexOf('COMIENZA');
+        if (ic < 0) continue;
+        const tc = ta.slice(ic);
+        for (const [tipo, legs] of [['PICK 4',4],['TRIPLO',3],['5 Y 6',6],['CUATERNA',4],['DOBLE EXTRA',2]]){
+          if (!tc.includes(tipo)) continue;
+          const lotes = [];
+          for (let k = 0; k < legs; k++) lotes.push(porC[c.hipodromo+'|'+(c.nro+k)]);
+          if (lotes.some(l=>!l)) continue;
+          const sels = lotes.map(armarLeg);
+          const boletos = sels.reduce((a,s)=>a*s.length, 1);
+          const chance = sels.reduce((a,s)=>a*s.reduce((x,p)=>x+ +p.prob, 0), 1);
+          const mPrecio = tc.match(new RegExp(tipo.replace(/ /g,'\\s') + "[^$]*\\$\\s?([\\d\\.]+)"));
+          const precio = mPrecio ? +mPrecio[1].replace(/\./g,'') : null;
+          const mPozo = tc.match(/POZO GARANTIZADO[^$]*\$\s?([\d\.]+)/);
+          filasC += `<div class="chico" style="padding:2px 0">
+            <b>${tipo} ${c.nro}ª a ${c.nro+legs-1}ª</b>${mPozo?` (pozo gar. $${plata(mPozo[1])})`:''}: `
+            + sels.map((s,k)=>`${c.nro+k}ª [${s.map(p=>esc(p.mandil??'?')).join('-')}]`).join(' × ')
+            + ` = <b>${boletos} boleto${boletos>1?'s':''}</b>${precio?` → $${(boletos*precio).toLocaleString('es-AR')}`:''}`
+            + ` · chance ~${(chance*100).toFixed(0)}%${tipo==='5 Y 6'?' <i>(pagan también 5 aciertos)</i>':''}</div>`;
+        }
+      }
+      if (filasJ){
+        const box = document.createElement('div');
+        box.className = 'jugada';
+        box.style.margin = '0 12px 12px';
+        box.innerHTML = `<h4>Jugadas del día</h4>${filasJ}`
+          + (filasC ? `<div style="border-top:1px dotted var(--rojo);margin-top:4px;padding-top:4px">
+            <div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2);padding-bottom:2px">COMBINADAS — ARMADO DEL MODELO <span class="chico" style="font-weight:normal">(carrera dominada = pick solo; abierta = 2-3 candidatos)</span></div>${filasC}</div>` : '')
+          + `<div class="chico" style="border-top:1px dotted var(--rojo);margin-top:4px;padding-top:4px">
+          <b>REGLAS:</b> a ganador, una sola apuesta posible por carrera (el pick), y SOLO si el tablero paga su mínimo — si no llega, esa carrera se mira, no se juega. Pick pagando <b>$8 o más = jugada estrella</b> (+25% histórico). Las combinadas son armado sugerido: la chance es la matemática del modelo, el pozo decide si conviene. Tocá una fila para ir a la carrera.</div>`;
+        cont.appendChild(box);
+      }
+    }
+  } catch(e) {}
+  for (const c of carreras){
+    const card = cardCarrera(c);
+    cont.appendChild(card);
+    CARDS[c.hipodromo+'|'+c.nro] = {card, c};
+    const b = document.createElement('button');
+    b.textContent = (carreras.some(x=>x.hipodromo!==c.hipodromo) ? c.hipodromo[0] : '') + c.nro + 'ª';
+    b.onclick = () => { abrir(card, c, true); card.scrollIntoView({behavior:'smooth', block:'start'}); };
+    nav.appendChild(b);
+  }
+}
+
+const CARDS = {};
+function abrirNro(h, n){
+  const x = CARDS[h+'|'+n];
+  if (x){ abrir(x.card, x.c, true); x.card.scrollIntoView({behavior:'smooth', block:'start'}); }
+}
+
+function abrir(card, c, forzar){
+  const cerrada = card.classList.contains('cerrada');
+  if (forzar && !cerrada) {} else card.classList.toggle('cerrada');
+  card.querySelector('.c-flecha').textContent = card.classList.contains('cerrada') ? '▼' : '▲';
+  if (!card.classList.contains('cerrada') && !card.dataset.cargada){
+    card.dataset.cargada = '1';
+    linea(c, card.querySelector('.relleno')).catch(e =>
+      card.querySelector('.relleno').innerHTML = '<div class="aviso">error: '+esc(e.message)+'</div>');
+  }
+}
+
+function catCarrera(c){
+  const t = (c.condicion||'').toLowerCase();
+  const p = (c.premio||'').toUpperCase();
+  if (/GRAN PREMIO|\(G\d\)|CLASICO|CLÁSICO/.test(p)) return 'CLÁSICO';
+  if (p.includes('ESPECIAL')) return 'ESPECIAL';
+  if (t.includes('handicap') || t.includes('hándicap')) return 'HANDICAP';
+  if (/no hayan? corrido/.test(t)) return 'DEBUTANTES';
+  if (/no hayan? ganado/.test(t)) return 'PERDEDORES';
+  let m = t.match(/ganador(?:a|e)?s? de (una|dos|tres|cuatro|\d+)/);
+  if (m){
+    const n = {una:'1', dos:'2', tres:'3', cuatro:'4'}[m[1]] || m[1];
+    return 'GANADORES DE ' + n;
+  }
+  if (/ganador(?:a|e)?s?/.test(t)) return 'GANADORES';
+  return null;
+}
+
+function cardCarrera(c){
+  const div = document.createElement('div');
+  div.className = 'carrera cerrada';
+  const cat = catCarrera(c);
+  const premio1 = c.premios && c.premios['1'] ? ' · 1º $' + (+c.premios['1']).toLocaleString('es-AR') : '';
+  div.innerHTML = `
+    <div class="c-cab">
+      <div class="c-nro">${c.nro}<small>ª</small></div>
+      <div class="c-datos">
+        <div class="dist">${c.distancia||'?'} METROS ${cat? `<span class="etiqueta" style="background:${cat==='CLÁSICO'||cat==='ESPECIAL'?'var(--oro)':'var(--rojo)'};color:#fff;vertical-align:middle">${cat}</span>`:''} <span class="chico" style="font-weight:normal">— ${esc(c.premio||'')}</span></div>
+        <div class="meta condensada">${HIPOS[c.hipodromo]||c.hipodromo} · PISTA ${esc(c.pista||'?')} ${esc(c.estado||'')} ${c.hora? '· '+c.hora+' hs':''}${premio1}${c.video_url? ' · <a href="'+esc(c.video_url)+'" target="_blank" style="color:var(--rojo)" onclick="event.stopPropagation()">▶ VIDEO</a>':''}</div>
+      </div>
+      <div class="c-flecha">▼</div>
+    </div>
+    <div class="c-resto">
+      <div class="c-cond">${esc(c.condicion||'')}</div>
+      <div class="relleno"><div class="aviso">Tirando la línea…</div></div>
+    </div>`;
+  div.querySelector('.c-cab').onclick = () => abrir(div, c);
+  return div;
+}
+
+function miniLinea(p, nombre, llegMap, ejsList){
+  const ea = apronteAntes(ejsList, p.fecha);
+  const pos = p.posicion ? p.posicion + 'º' : '—';
+  const info = llegMap ? llegMap[`${p.fecha}|${p.hipodromo}|${p.carrera_nro}`] : null;
+  const deN = info && info.corrieron ? ' de ' + info.corrieron : '';
+  const cpos = p.dist_acum ? ' a ' + esc(p.dist_acum) : (p.posicion==='1' ? ' GANÓ' : '');
+  let llegHtml = '';
+  if (info && info.llegada){
+    // cada rival de la llegada → su ficha (verCaballo); el propio queda resaltado
+    const parteHtml = t => {
+      const m = t.match(/^(\d+º)\s+(.+?)(\s+a\s+(?:[\d]|v\.m|pescuezo|cabeza|hocico|medio|s\.a).*)?$/);
+      if (!m) return t.includes(nombre) ? `<b style="color:var(--rojo)">${esc(t)}</b>` : esc(t);
+      const [, pos, quien, cola] = m;
+      if (quien === nombre) return `<b style="color:var(--rojo)">${esc(t)}</b>`;
+      // sin rp_id en el texto de la llegada: verCaballo resuelve el homónimo por la fecha de ESTA carrera
+      return `${pos} <span class="lnk2" onclick="verCaballo('${esc(quien).replace(/'/g,"\\'")}',false,null,'${p.fecha}')">${esc(quien)}</span>${esc(cola||'')}`;
+    };
+    let partes = info.llegada.split(' | ').map(parteHtml);
+    // si no entro en los 5, se agrega abajo con su puesto y los cuerpos totales al 1º
+    if (!info.llegada.includes(nombre) && p.posicion){
+      const acum = p.dist_acum ? ' a ' + esc(p.dist_acum) + ' del 1º' : '';
+      partes.push(`⋮`, `<b style="color:var(--rojo)">${esc(p.posicion)}º ${esc(nombre)}${acum}</b>`);
+    }
+    llegHtml = '<div class="ln-lleg">' + partes.join('<br>') + '</div>';
+  }
+  const estado = (p.estado||'').toLowerCase();
+  const CAT_LINDA = {'HANDICAP':'Handicap','DEBUTANTES':'Debutantes','PERDEDORES':'Perdedores',
+    'GANADORES':'Ganadores','GANADORES DE 1':'Ganadores de 1','GANADORES DE 2':'Ganadores de 2',
+    'GANADORES DE 3':'Ganadores de 3','GANADORES DE 4':'Ganadores de 4'};
+  const catL = catCarrera({condicion: p.condicion, premio: p.premio});
+  let tipoHtml = `<div class="ln-tipo" style="color:var(--tinta2)">${esc(p.premio||'')}&nbsp;</div>`;  // el premio SIEMPRE se ve
+  if (catL === 'CLÁSICO' || catL === 'GRAN PREMIO (G1)' || catL === 'ESPECIAL'){
+    tipoHtml = `<div class="ln-tipo" style="color:var(--oro)">★ ${esc(p.premio||catL)}</div>`;
+  } else if (catL){
+    tipoHtml = `<div class="ln-tipo" style="color:var(--rojo)">${CAT_LINDA[catL]||catL}${p.premio? ' · '+esc(p.premio):''}</div>`;
+  }
+  // orden de lectura CALCADO al bloque de la revista impresa:
+  // fecha/dist/hipo -> tiempo+perf -> categoria -> LLEGADA -> jockey -> peso/C/P -> desarrollo
+  const cabTxt = `${p.fecha.slice(2).split('-').reverse().join('/')} · ${p.distancia||'?'}m ${p.hipodromo}`;
+  const cabLink = p.carrera_nro!=null
+    ? `<span class="lnk2" title="la carrera completa: contra quiénes corrió" onclick="verCarreraHistorica('${p.fecha}','${p.hipodromo}',${p.carrera_nro})">${cabTxt}</span>`
+    : cabTxt;
+  return `<div class="lncard">
+    <div class="ln-cab">${cabLink} · ${esc((p.pista||'').slice(0,3)).toUpperCase()} ${esc(estado)}${p.video_url? ' · <a href="'+esc(p.video_url)+'" target="_blank" style="color:var(--rojo);text-decoration:none">▶</a>':''}</div>
+    <div class="ln-cab">${p.tiempo? esc(p.tiempo)+' · ':''}${p.performance!=null? 'perf <b>'+fnum(p.performance)+'</b>'
+      : /^s\.a\./.test(p.dist_acum||'') ? '<i>sin aproximación — no se tasa</i>'
+      : /^(3[0-9]|[4-9][0-9])( \d\/\d)? ?cp/.test(p.dist_acum||'') ? '<i>a 30+ cpos: distanciado — no se tasa</i>'
+      : (p.fecha >= new Date(Date.now()-3*864e5).toISOString().slice(0,10) ? '<i>perf en cocción</i>' : '<i>carrera sin tasar</i>')}</div>
+    ${tipoHtml}
+    ${llegHtml}
+    <div class="ln-pos">${esc((p.jockey||'?').split(',')[0])}</div>
+    <div class="ln-des">${p.peso_animal? '⚖'+p.peso_animal+'k.- ':''}${p.kg? (+p.kg).toFixed(0)+'k · ':''}${p.herraje? '<b>'+esc(p.herraje.toUpperCase())+'</b> · ':''}<b class="${p.posicion==='1'?'g':''}">${pos}${deN}</b>${cpos}${p.dividendo? ' · P: $'+(+p.dividendo).toFixed(2):''}${p.cuidador? ' · '+esc((p.cuidador||'').split(',')[0]):''}</div>
+    ${ea? '<div class="ln-des">🏃 venía con apronte de '+fmtApronte(ea)+'</div>':''}
+    ${p.incidencias? '<div class="ln-des">🚩 '+esc(p.incidencias)+'</div>':''}
+    ${p.desarrollo? '<div class="ln-des">'+esc(p.desarrollo)+'</div>':''}
+  </div>`;
+}
+
+async function linea(c, target){
+  let corredores = await q(`turf_anotados?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&select=mandil,caballo,caballo_rp_id,jockey,kg,edad,sexo,pelaje,padre,madre,ultimas,cuidador,caballeriza`);
+  let corrida = false;
+  if (!corredores.length){
+    corredores = await q(`turf_lineas?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&select=mandil,caballo,caballo_rp_id,jockey,kg,posicion,dividendo`);
+    corrida = true;
+  }
+  if (!corredores.length){ target.innerHTML = '<div class="aviso">sin anotados en la base</div>'; return; }
+  // identidad por rp_id (07/07/26, homónimos): la campaña/patrón/rating se busca
+  // por caballo_rp_id; el nombre queda solo para corredores viejos sin rp_id
+  const K = x => x.caballo_rp_id ?? x.caballo;
+  const ids = corredores.map(x => x.caballo_rp_id).filter(r => r != null).join(',');
+  const sueltos = corredores.filter(x => x.caballo_rp_id == null).map(x => '"' + x.caballo.replace(/"/g,'') + '"').join(',');
+  const selPerf = 'select=caballo,caballo_rp_id,fecha,hipodromo,carrera_nro,distancia,pista,estado,kg,posicion,dist_acum,dividendo,desarrollo,incidencias,tiempo,performance,video_url,peso_animal,condicion,premio,jockey,cuidador,herraje';
+  const [perfsRp, perfsNom, coms, pats, pros, pros7, cabs, enfr, tend, ejsAll, rats, barr] = await Promise.all([
+    ids ? q(`turf_performances?caballo_rp_id=in.(${ids})&fecha=lt.${c.fecha}&order=fecha.desc&limit=1000&${selPerf}`) : [],
+    sueltos ? q(`turf_performances?caballo=in.(${encodeURIComponent(sueltos)})&fecha=lt.${c.fecha}&order=fecha.desc&limit=1000&${selPerf}`) : [],
+    q(`turf_comentarios?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&select=caballo_nro,caballo,comentario,entrenamientos,partida_final`),
+    ids ? q(`turf_patrones?caballo_rp_id=in.(${ids})&select=caballo,caballo_rp_id,tipo,pronostico,ciclo,sd,desde_fracaso,racha_actual,tipo_matias`) : [],
+    q(`turf_pronosticos?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&motor=eq.v3&select=caballo,prob,prob_marca,prob_tranq,p_tranquila,precio_minimo,senal,razon,proy,pool,alcance`),
+    q(`turf_pronosticos?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&motor=eq.v7&select=caballo,mandil,prob,prob_tranq,proy,precio_minimo,pool,alcance,razon`).catch(()=>[]),
+    ids ? q(`turf_caballos?rp_id=in.(${ids})&select=rp_id,nombre,sexo,pelaje,nacimiento,padre,madre,abuelo_materno,criador`) : [],
+    ids ? q(`turf_enfrentamientos?caballo_a_rp_id=in.(${ids})&caballo_b_rp_id=in.(${ids})&fecha=lt.${c.fecha}&margen_ab=not.is.null&order=fecha&limit=500&select=caballo_a,caballo_b,fecha,margen_ab`) : [],
+    ids ? q(`turf_aprontes_tendencia?caballo_rp_id=in.(${ids})&select=caballo,caballo_rp_id,mejora,vrel_reciente,aprontes`) : [],
+    ids ? q(`turf_ejercicios?caballo_rp_id=in.(${ids})&velocidad=not.is.null&order=fecha.desc&limit=500&select=caballo,caballo_rp_id,fecha,tipo,distancia_m,tiempo_seg,velocidad`) : [],
+    ids ? q(`turf_rating_maestro?caballo_rp_id=in.(${ids})&select=caballo,caballo_rp_id,camada`) : [],
+    ids ? q(`turf_barreros?caballo_rp_id=in.(${ids})&select=caballo,caballo_rp_id,ventaja_barro,corridas_barro`) : []
+  ]);
+  const perfs = [...perfsRp, ...perfsNom];
+  const PADRES_D = await getPadresDebut();
+  const pedCab = {};
+  for (const p of cabs) pedCab[p.rp_id ?? p.nombre] = p;
+  const tendCab = {};
+  for (const t of tend) tendCab[K(t)] = t;
+  const ejsCab = {};
+  for (const e of ejsAll) (ejsCab[K(e)] ||= []).push(e);
+  const camCab = {};
+  for (const r of rats) camCab[K(r)] = r.camada;
+  const barrCab = {};
+  for (const b of barr) barrCab[K(b)] = b;
+  const pistaMojada = c.estado && c.estado !== 'Normal';
+
+  const porCab = {}; for (const p of perfs) (porCab[K(p)] ||= []).push(p);
+  const patCab = {}; for (const p of pats) patCab[K(p)] = p;
+  const proCab = {}; for (const p of pros) proCab[p.caballo] = p;
+  const apzG = f => { const m = ((f&&f.razon)||'').match(/aprendiz[^:]*: descarga (\d(?:[.,]5)?)/);
+    return m ? ` <b style="color:var(--verde)" title="jockey aprendiz: descarga kilos — la proyección ya usa el kilo real">⚖-${m[1]}</b>` : ''; };
+  let sintesis = null; const comCab = {};
+  for (const k of coms){
+    if (k.caballo_nro === 0) sintesis = k.comentario;
+    else if (k.caballo) comCab[k.caballo.toUpperCase().trim()] = k;
+  }
+  const filas = corredores.map(x => {
+    const ps = porCab[K(x)] || [];
+    const ult = ps.length && ps[0].performance!=null ? +ps[0].performance : null;
+    const pro = proCab[x.caballo];
+    return {...x, ult, ps, pat: patCab[K(x)],
+      com: comCab[(x.caballo||'').toUpperCase().trim()], ped: pedCab[K(x)],
+      prob: pro ? +pro.prob : null, pmin: pro ? +pro.precio_minimo : null,
+      pmarca: pro && pro.prob_marca!=null ? +pro.prob_marca : null,
+      ptranq: pro && pro.prob_tranq!=null ? +pro.prob_tranq : null,
+      pool: pro ? pro.pool : null,
+      alcance: pro && pro.alcance!=null ? +pro.alcance : null,
+      senal: pro ? pro.senal : null, razon: pro ? pro.razon : null,
+      proy: pro && pro.proy!=null ? +pro.proy : null};
+  });
+  // como la revista: los caballos ordenados por numero de mandil
+  const nmandil = m => { const x = parseInt(m,10); return isNaN(x)? 999 : x*10 + (/a$/i.test(m||'')?1:0); };
+  filas.sort((a,b) => nmandil(a.mandil) - nmandil(b.mandil));
+  // nombre → ancla a su tabulada en esta misma pagina
+  const nomTab = (f, sty) => `<span class="link"${sty?` style="${sty}"`:''} onclick="verTabulada('${c.hipodromo}',${c.nro},'${esc(f.mandil??'')}')">${esc(f.caballo)}</span>`;
+
+  // la llegada (top 5) de cada carrera pasada que se va a mostrar
+  const dset = [...new Set(filas.flatMap(f => f.ps.map(p => p.fecha)))];
+  let llegMap = {};
+  for (let i = 0; i < dset.length; i += 40){
+    try {
+      const llegs = await q(`turf_llegadas_top?fecha=in.(${dset.slice(i,i+40).join(',')})&select=fecha,hipodromo,carrera_nro,llegada,corrieron&limit=1000`);
+      for (const l of llegs) llegMap[`${l.fecha}|${l.hipodromo}|${l.carrera_nro}`] = l;
+    } catch(e) { /* sin llegadas no se rompe nada */ }
+  }
+
+  let html = '';
+  // recuadro LA JUGADA (motor v2: simulacion Monte Carlo)
+  const conProb = filas.filter(f=>f.prob!=null).slice().sort((a,b)=>b.prob-a.prob);
+  if (conProb.length){
+    const esMC = conProb.some(f=>f.ptranq!=null);
+    const top = conProb.slice(0,3);
+    // cartel de reprisa (parado 60+/180+/365+ dias), visible entre los probables
+    const goma = f => {
+      const m = (f.razon||'').match(/goma: .+? bomba (\d+)% \/ fracaso (\d+)%/);
+      if (!m) return '';
+      const b = +m[1], fr = +m[2];
+      if (b >= 20) return ` <b style="color:#2a7">💣${b}%</b>`;      // resorte comprimido
+      if (fr >= 17) return ` <b style="color:#a00">⚠${fr}%</b>`;     // brillo-deuda
+      return '';
+    };
+    const ultFecha = {};
+    perfs.forEach(p => { if (!ultFecha[p.caballo]) ultFecha[p.caballo] = p.fecha; });
+    const mesesP = cab => {
+      const uf = ultFecha[cab];
+      if (!uf) return '';
+      const m = Math.round((new Date(c.fecha) - new Date(uf)) / 2592e6);
+      return m >= 2 ? ' ' + m + 'm' : '';
+    };
+    const repr = f => !f.razon ? '' :
+      ((/POLLO REPRISADOR/.test(f.razon) ? ' <b style="color:var(--rojo)">🚩 POLLO reprisador' + mesesP(f.caballo) + ' (línea vieja y corta)</b>' :
+        /REPRISA LARGA/.test(f.razon) ? ' <b style="color:var(--rojo)">⚠️ reprisa larga' + mesesP(f.caballo) + '</b>' :
+        /⚠️ REPRISA/.test(f.razon) ? ' <b style="color:var(--rojo)">⚠️ reprisa' + mesesP(f.caballo) + '</b>' :
+        /reprisa:|reprisado 60/.test(f.razon) ? ' ⚠ reprisa' + mesesP(f.caballo) : '') +
+       (/SOBRE su historia/.test(f.razon) ? (goma(f)?'':' <b style="color:#a00">⚠17%</b>') + ' <b style="color:#a00">▼deuda</b>' : '') +
+       (/punto justo|3ª de la serie/.test(f.razon) ? ' <b style="color:#2a7">★3ª</b>' : ''));
+    html += `<div class="jugada"><h4>La jugada</h4>`;
+    if (conProb.some(f => f.pool === 'debut'))
+      html += `<div class="chico" style="border:1px dashed var(--oro);padding:4px 6px;margin-bottom:6px">🎲 <b>HAY DEBUTANTES — manda el tablero</b> (medido 2010-26): a menos de $3 corre +6 y gana 1 de 3 · $3-6 corre +2,6 (gana 17%) · $6-12 neutro · $12-25 relleno (−2,6) · $25+ descarte (gana 1%)</div>`;
+    // candidatos = a tiro de la punta con SU alcance normal (p90 de su pool):
+    // veterano llega a ~7, el que viene de fracaso grande rebota hasta ~13
+    const conLinea = filas.filter(f=>f.proy!=null);
+    if (conLinea.length >= 3){
+      const mejor = Math.max(...conLinea.map(f=>f.proy));
+      // dos alternativas en cuerpos (aritmetica de Matias):
+      // PROMEDIO: uno afloja 2,6 y otro avanza 2,6 -> gana el que esta a <5,2
+      // BUEN DIA: uno afloja 4 y otro avanza 4 -> se suman los de 5,2 a 8
+      // (el que viene de fracaso llega desde mas lejos: su rebote alcanza p90)
+      const orden = f => f.ptranq ?? f.prob ?? 0;
+      const etiq = f => { const g = mejor-f.proy;
+        return `(${esc(f.mandil??'?')}) ${nomTab(f)}${g<0.05?' puntero':' a '+fnum(g)}${(f.pool==='frac10'||f.pool==='frac6'||f.pool==='vpostreb')&&g>=5.2?' <b>por rebote</b>':''}${goma(f)}${repr(f)}${f.ptranq!=null?' · '+(f.ptranq*100).toFixed(0)+'%':''}`; };
+      // avance [promedio (p75), buen dia (p90)] POR ESTADO, pools v2.4 07/07/26:
+      // el deudor y el reprisado avanzan MENOS que el comun (antes caian en 2,6)
+      const AV = {frac10:[6.5,10.3], frac6:[4.1,7], frac6fav:[3,7.1], vpostreb:[6,9],
+                  bomba10:[5,8.4], sobre:[1.7,4.3], repr:[2.9,6.3], n1:[5.3,9.6], n23:[3.9,7.2]};
+      const avz = f => AV[f.pool] || [2.6,4];
+      // orden por LINEA (como se lee el programa); el % queda como peso de cada uno
+      const tierA = conLinea.filter(f=>mejor-f.proy < 2.6+avz(f)[0]).sort((a,b)=>b.proy-a.proy);
+      const tierB = conLinea.filter(f=>{
+        const g = mejor-f.proy;
+        return g >= 2.6+avz(f)[0] && g < 4+avz(f)[1];
+      }).sort((a,b)=>b.proy-a.proy);
+      if (tierA.length){
+        const abierta = tierA.length >= 6 ? '<b style="color:var(--rojo)">CARRERA ABIERTA</b> — ' : '';
+        const pt = (proCab && Object.values(proCab)[0] && Object.values(proCab)[0].p_tranquila!=null) ? +Object.values(proCab)[0].p_tranquila : null;
+        html += `<div class="chico" style="padding:2px 2px 6px">${abierta}<b style="color:var(--rojo)">SI LA GANA UNO HACIENDO LO ESPERABLE${pt!=null?` (pasa ${(pt*100).toFixed(0)} de cada 100 carreras)`:''}:</b><br>
+          <b>Con movimientos promedio</b> (uno afloja 2,6 y otro avanza su promedio POR ESTADO: 2,6 el común · ~6,5 el rebotador · pero el brilloso en deuda solo 1,7 y el reprisado 2,9) <b>la ganan ${tierA.length}</b>: `
+          + tierA.map(etiq).join(' — ')
+          + (tierB.length ? `<br><b>Estirando a un buen día</b> (uno afloja 4 y otro mete su tope común: 4 el normal, ~10 el rebotador): se suman ` + tierB.map(f=>etiq(f,1)).join(' — ') : '');
+        const resto = conLinea.filter(f=>!tierA.includes(f) && !tierB.includes(f))
+          .sort((a,b)=>(a.proy!=null&&b.proy!=null)?(b.proy-a.proy):0);
+        if (resto.length)
+          html += `<br><b>Solo con bombazo</b> (ni su buen día los alcanza — necesitan saltar fuera de su régimen): `
+            + resto.map(f=>`(${esc(f.mandil??'?')}) ${nomTab(f)} a ${fnum(mejor-f.proy)}`).join(' — ');
+        html += ` <i>(% = cuán seguido pasa según la simulación. Estar "a tiro" es el camino; el % es lo angosto del camino: al de atrás no le alcanza con que afloje el puntero — también tienen que fallar TODOS los del medio. El rebotador tiene % alto aunque esté lejos porque su salto pasa por arriba del tráfico)</i></div>`;
+      }
+    }
+    html += top.map(f =>
+      `<div class="fila-j">${btnJ(c.nro,f)}<span class="mandil" style="border:1px solid var(--tinta)">${esc(f.mandil??'?')}</span><span class="pj">${nomTab(f)}</span>
+       <span>gana <b>${(f.prob*100).toFixed(0)}%</b>${f.pmarca!=null?` · marcador <b>${(f.pmarca*100).toFixed(0)}%</b>`:''}${f.ptranq!=null?` · esperable ${(f.ptranq*100).toFixed(0)}%`:''}${f.ptranq!=null&&f.prob>0.05?(f.ptranq<f.prob*0.85?' <i>→ gana el quilombo: necesita bombazo propio o derrumbe ajeno</i>':f.ptranq>f.prob*1.25?' <i>→ su fuerte es la carrera esperable</i>':''):''}</span>
+       <span class="precio">jugable si el tablero paga +$${fnum(f.pmin,2)}</span>
+       ${f.senal==='JOYA'?'<span class="etiqueta et-joya">🎯 Joya</span>':''}
+       ${f.senal==='VALOR'?'<span class="etiqueta et-valor">💰 Tapado</span>':''}${goma(f)}${repr(f)}</div>
+       ${f.razon?`<div class="chico" style="padding:0 0 6px 2px">${esc((f.razon||'').replace(/^gana [^.]+\.\s*/,''))}</div>`:''}`).join('');
+    // el tapado (viene de fracaso grande) aunque no este en el top 3
+    for (const f of conProb.slice(3))
+      if (f.senal==='VALOR')
+        html += `<div class="fila-j">${btnJ(c.nro,f)}<span class="mandil" style="border:1px solid var(--tinta)">${esc(f.mandil??'?')}</span><span class="pj">${nomTab(f)}</span>
+          <span>gana <b>${(f.prob*100).toFixed(0)}%</b></span><span class="precio">jugable si paga +$${fnum(f.pmin,2)}</span>
+          <span class="etiqueta et-valor">💰 Tapado</span></div>
+          ${f.razon?`<div class="chico" style="padding:0 0 6px 2px">${esc((f.razon||'').replace(/^gana [^.]+\.\s*/,''))}</div>`:''}`;
+    // llegada proyectada: si todos hacen su proyeccion, asi terminan (con la perf esperada)
+    // rebotadores: su "haran" es linea + rebote medido (+2,5/+1,0/+2,2) — backtesteado
+    // el 05/07 vs la linea pelada y vs la media vuelta desde la anterior: gana este
+    // banda REAL por estado (p25→p75 de su pool de dados, deltas_pools 06/07/26):
+    // el comun es ±3 pero los estados extremos van CARGADOS para un lado
+    // (rebote/vpostreb: adelante; sobre/repr: atras) — idea de Matias 06/07
+    // caja = el CORAZON de sus dias (p33->p67: un dia de cada tres cae aca;
+    // el resto se reparte mitad afuera de cada lado). La caja del rebotador
+    // nace ARRIBA de su linea (frac10 +0.1, vpostreb +0.2) = la direccion
+    const BANDA = {vet:[-1.4,0.6,2.5], n23:[-1.7,0.5,2.7], n1:[-1.6,1.0,3.7],
+                   frac10:[0.1,3.0,5.6], frac6:[-1.1,1.4,3.8], frac6fav:[-1.5,0.8,3.0],
+                   bombalim:[-2.7,-0.1,2.4], bombareb:[-0.3,2.2,4.5],
+                   vpostreb:[0.2,2.7,4.9],
+                   bomba10:[-1.6,1.1,3.6], repr:[-3.3,-0.7,1.7], repr60:[-2.7,-0.3,1.9], repr180:[-4.2,-1.4,1.1],
+                   repr365:[-6.2,-3.0,0.0], sobre:[-3.3,-1.2,0.7],
+                   debut:[-5.7,-1.7,1.5]};  // vs media del lote: caja ancha de verdad
+    const P60 = {frac10:4.5, frac6:2.8, vpostreb:4.0, bombareb:3.6, bomba10:2.7, debut:0.1};
+    const GOMA90 = {21: 8.2, 32: 10.0, 45: 12.8};   // p90 del hundido por nivel de 💣
+    const gomaAlc = f => { const m = (f.razon||'').match(/goma: hundido .*?bomba (\d+)%/);
+      return m ? GOMA90[+m[1]] || null : null; };
+    const MALA = {sobre:-8.1, bombalim:-8.4, repr180:-10.5, repr365:-13.3, debut:-13.2};   // p10 de los estados cargados a fracasar   // p60: lo que el 60% de los rebotes no pasa
+    // EL LADO (08/07/26, pedido Matias): de cada 100 caballos en ese estado,
+    // cuantos corren ARRIBA de su linea (+1 o mas) y cuantos ABAJO (-1 o menos).
+    // Medido de los dados reales (deltas_pools.json). Flecha solo si esta cargado.
+    const LADO = {vet:[46,36], n23:[46,38], n1:[49,36], frac10:[62,27], frac6:[53,33],
+                  frac6fav:[49,36], vpostreb:[62,26], bomba10:[50,37], repr:[38,47],
+                  sobre:[30,52], debut:[35,54],
+                  repr60:[40,45], repr180:[33,53], repr365:[27,61],
+                  bombalim:[42,44], bombareb:[58,29]};
+    const apz = f => { const m = (f.razon||'').match(/aprendiz[^:]*: descarga (\d(?:[.,]5)?)/);
+      return m ? ` <b style="color:var(--verde)" title="jockey aprendiz: descarga kilos — ya descontado en la proyección">⚖-${m[1]}</b>` : ''; };
+    const lado = f => { const l = LADO[f.pool]||LADO.vet, d = l[0]-l[1];
+      const t = `de cada 100 en este estado: ${l[0]} corren arriba de su línea, ${l[1]} abajo`;
+      if (d >= 15) return ` <span title="${t}" style="font-weight:bold;color:var(--verde)">⬆${l[0]}/${l[1]}</span>`;
+      if (d <= -9) return ` <span title="${t}" style="font-weight:bold;color:var(--rojo)">⬇${l[0]}/${l[1]}</span>`;
+      return ` <span title="${t}" style="font-weight:bold;color:var(--tinta2)">=${l[0]}/${l[1]}</span>`; };
+    const bLo = f => (BANDA[f.pool]||BANDA.vet)[0];
+    const bMed = f => (BANDA[f.pool]||BANDA.vet)[1];
+    const bHi = f => (BANDA[f.pool]||BANDA.vet)[2];
+    const esRebote = f => f.pool==='frac10'||f.pool==='frac6'||f.pool==='vpostreb'||f.pool==='bombareb'||f.pool==='bomba10'||f.pool==='debut';
+    const REBPC = {frac10:31, frac6:20, frac6fav:15, vpostreb:25, bombareb:24, bomba10:19, debut:16};
+    const rebFl = f => ` <b title="probabilidad de bomba (+6 o mas) de este estado">↗${REBPC[f.pool]||''}%</b>`;
+    // esperado = el MISMO ◆ de las bandas (linea + mediana del estado, todos
+    // los estados — unificado 07/07: la llegada proyectada decia otra cosa que
+    // las bandas porque solo corregia rebotadores)
+    const esperado = f => f.proy==null ? null : f.proy + bMed(f);
+    // orden de bandas: por ◆ (dia esperado = linea + mediana del estado), no por
+    // linea cruda — el brilloso en deuda baja, el rebotador sube (caso CAPITAN
+    // BRUJO vs TRIVENTO, pregunta Matias 07/07)
+    const proys = filas.filter(f=>f.proy!=null).slice().sort((a,b)=>(b.proy+bMed(b))-(a.proy+bMed(a)));
+    const proysEsp = filas.filter(f=>f.proy!=null)
+      .map(f=>({...f, proy: esperado(f), rebote: esRebote(f)}))
+      .sort((a,b)=>b.proy-a.proy);
+    if (proysEsp.length >= 3){
+      const p0 = proysEsp[0].proy;
+      html += `<div style="border-top:1px dotted var(--rojo);margin-top:4px;padding-top:5px" class="chico">
+        <b style="color:var(--rojo)">LLEGADA PROYECTADA:</b> ` +
+        proysEsp.slice(0,5).map((f,i) => i===0 ?
+          `1º (${esc(f.mandil??'?')}) ${nomTab(f)} <b>hará ${fnum(f.proy)}</b>${f.rebote?'↗':''}` :
+          `${i+1}º (${esc(f.mandil??'?')}) ${nomTab(f)} <b>${fnum(f.proy)}</b>${f.rebote?'↗':''} (a ${fnum(p0-f.proy)})`).join(' — ') +
+        ` <i>(la perf que se le espera a cada uno y los cuerpos de diferencia si todos hacen su línea)</i></div>`;
+      // LAS BANDAS: la banda REAL de cada estado (p25→p75 de sus dados) — ya
+      // no son simetricas: al rebotador se le corre para adelante, al brilloso/
+      // reprisado para atras. Banda que cruza la raya roja (piso) = puede ganar.
+      const bandas = proys.slice(0, 9);
+      const cola = f => esRebote(f) && f.alcance ? Math.max(+f.alcance, bHi(f)) : bHi(f);
+      // marcas del rebotador: media del rebote (medido: frac10 +2,5 / frac6 +1,0 / vpostreb +2,2),
+      // vuelta entera (linea + mitad de lo perdido = su nivel previo) y tope (p90)
+      const mediaRebote = f => f.pool==='frac10' ? f.proy + 2.5 :
+                               f.pool==='frac6' ? f.proy + 1.0 :
+                               f.pool==='vpostreb' ? f.proy + 2.2 : null;
+      const mediaVuelta = f => {
+        const m = (f.razon||'').match(/fracasar por (\d+)|traspi[eé] \((-?\d+)\)/);
+        return m ? f.proy + Math.abs(+(m[1]||m[2]))/2 : null;
+      };
+      const lo = Math.min(...bandas.map(f=>f.proy + bLo(f))) - 0.5;
+      const hi = Math.max(...bandas.map(f=>f.proy + cola(f))) + 0.5;
+      const pct = v => Math.max(0, Math.min(100, 100*(v-lo)/(hi-lo)));
+      // raya roja = la marca del ganador esperable: el mejor "dia tipico" del
+      // lote. Los niveles NO salen de la geometria (con cajas de 6-8 cpos y
+      // lineas a 1-3, se pisan todas): salen de la prob del Monte Carlo.
+      const piso = Math.max(...bandas.map(f => f.proy + bMed(f)));
+      html += `<div style="border-top:1px dotted var(--rojo);margin-top:5px;padding-top:5px" class="chico">
+        <b style="color:var(--rojo)">LAS BANDAS</b> — <b style="color:#7a5c0e">◆ = el día que se le espera</b> (el número está al lado del nombre). La <b>rayita negra = su LÍNEA</b> (lo que es); el ◆ = el día que se le espera (la línea ya corrida hacia su lado). La caja = su margen normal (1 día de cada 3). La <b style="color:var(--rojo)">raya roja</b> = lo que hay que correr para ganarla. Color: <b>DORADA FUERTE = 15%+ de chances</b> · pálida = la pelea · gris = solo con bombazo · puntitos DORADOS a la derecha = el estirón (su día bueno 1-de-10) · puntitos ROJOS a la izquierda = la cola mala (su día malo 1-de-10, solo en los cargados a fracasar) y <b>↗31% = su PROBABILIDAD DE BOMBA</b> (+6 o más sobre su línea, según sus dados) — el 💣XX% es la otra bomba: la de la goma (viene corriendo abajo de su vida). <b>EL LADO (arriba/abajo)</b>: <span style="color:var(--verde);font-weight:bold">⬆62/27</span> = de cada 100 en ese estado, 62 corren arriba de su línea y 27 abajo · <span style="color:var(--rojo);font-weight:bold">⬇30/52</span> = cargado a atrasar · =46/36 gris = derecho :`;
+      const ETQ = '0 0 46%';
+      const paso = (hi - lo) > 16 ? 4 : (hi - lo) > 8 ? 2 : 1;
+      let regla = '';
+      for (let t = Math.ceil(lo/paso)*paso; t <= hi; t += paso)
+        regla += `<span style="position:absolute;left:${pct(t)}%;transform:translateX(-50%);font-size:9px;color:var(--tinta2)">${t}</span>`;
+      html += `<div style="display:flex;height:13px;margin:3px 0 0">
+        <span style="flex:${ETQ}"></span>
+        <div style="flex:1;position:relative">${regla}
+          <span style="position:absolute;left:${pct(piso)}%;transform:translateX(-50%);font-size:9px;color:var(--rojo);font-weight:bold;background:#fff">${fnum(piso)}</span>
+        </div></div>`;
+      for (const f of bandas){
+        const cl = cola(f);
+        const serio = (f.prob || 0) >= 0.15;
+        const puede = serio || (f.prob || 0) >= 0.07;
+        html += `<div style="display:flex;align-items:center;margin:3px 0">
+          <span class="betq" style="flex:${ETQ};padding-right:7px;font-size:12px;line-height:1.3;align-self:center">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f, serio?'':puede?'color:var(--tinta)':'color:var(--tinta2);font-weight:normal')} ${fnum(f.proy)} <span style="color:#8b6914">◆${fnum(f.proy+bMed(f))}</span>${esRebote(f)?` <span style="font-weight:normal;color:#7a5c0e">60%:${fnum(f.proy+P60[f.pool])}</span>`:''} <span style="font-weight:normal;color:var(--tinta2)">[${fnum(f.proy+bLo(f))}·${fnum(f.proy+bHi(f))}]</span>${lado(f)}${apz(f)}${f.pool==='bombalim'?' <b style="color:#a00" title="bomba limpia: saltó desde la normalidad — corre ~1 abajo de su línea nueva, fracasa 1 de cada 6, bomba nueva solo 13%">▼devuelve ⚠17%</b>':''}${esRebote(f)?rebFl(f):''}${(goma(f)+repr(f)).replace(' reprisa larga',' rep.LARGA').replace(' reprisa',' rep')}</span>
+          <div style="flex:1;position:relative;height:16px;background:rgba(0,0,0,.03)">
+            ${!esRebote(f)&&gomaAlc(f)? `<div title="el estirón de la goma 💣: hasta ${fnum(f.proy+gomaAlc(f))} (1 de cada 10)" style="position:absolute;top:0;bottom:0;left:${pct(f.proy+bHi(f))}%;width:${pct(f.proy+gomaAlc(f))-pct(f.proy+bHi(f))}%;background:rgba(212,160,23,.12);border:1px dashed var(--oro)"></div>`:''}
+            ${MALA[f.pool]!=null? `<div title="la cola mala: 1 de cada 10 cae hasta ${fnum(f.proy+MALA[f.pool])}" style="position:absolute;top:0;bottom:0;left:${pct(f.proy+MALA[f.pool])}%;width:${pct(f.proy+bLo(f))-pct(f.proy+MALA[f.pool])}%;background:rgba(168,35,27,.08);border:1px dashed var(--rojo)"></div>`:''}
+            ${cl>bHi(f)? `<div title="el estirón del rebote: hasta ${fnum(f.proy+cl)}" style="position:absolute;top:0;bottom:0;left:${pct(f.proy+bHi(f))}%;width:${pct(f.proy+cl)-pct(f.proy+bHi(f))}%;background:rgba(212,160,23,.15);border:1px dashed var(--oro)"></div>`:''}
+            <div title="su día normal: ${fnum(f.proy+bLo(f))} a ${fnum(f.proy+bHi(f))}" style="position:absolute;top:0;bottom:0;left:${pct(f.proy+bLo(f))}%;width:${pct(f.proy+bHi(f))-pct(f.proy+bLo(f))}%;background:${serio?'rgba(212,160,23,.45)':puede?'rgba(212,160,23,.20)':'rgba(0,0,0,.12)'};border:1px solid ${puede?'var(--oro)':'#bbb'}"></div>
+            <div title="su línea: ${fnum(f.proy)}" style="position:absolute;top:0;bottom:0;left:${pct(f.proy)}%;width:2px;background:var(--tinta);opacity:.7;z-index:2"></div><div title="su día más probable: ${fnum(f.proy+bMed(f))}" style="position:absolute;top:0;bottom:0;left:calc(${pct(f.proy+bMed(f))}% - 5px);display:flex;align-items:center;font-size:11px;color:#7a5c0e;z-index:4;text-shadow:0 0 2px #fff"><b>◆</b></div>
+            ${esRebote(f)? `<div title="6 de cada 10 rebotes no pasan de ${fnum(f.proy+P60[f.pool])}" style="position:absolute;bottom:0;height:60%;left:${pct(f.proy+P60[f.pool])}%;width:2px;background:#7a5c0e;z-index:3"></div>`:''}
+            <div style="position:absolute;top:0;bottom:0;left:${pct(piso)}%;width:2px;background:var(--rojo)"></div>
+          </div></div>`;
+      }
+      html += `</div>`;
+    }
+    // 🥊 EL RETADOR v7 (memoria 10): A/B en produccion — su jugada y sus bandas
+    if (pros7 && pros7.length){
+      const f7 = pros7.map(p => ({caballo: p.caballo, mandil: p.mandil,
+        prob: +p.prob, ptranq: p.prob_tranq!=null? +p.prob_tranq : null,
+        proy: p.proy!=null? +p.proy : null, pmin: +p.precio_minimo,
+        pool: p.pool, alcance: p.alcance!=null? +p.alcance : null,
+        razon: p.razon}))
+        .sort((a,b)=>b.prob-a.prob);
+      const top7 = f7.slice(0,3);
+      html += `<div style="border-top:2px solid var(--tinta);margin-top:8px;padding-top:6px">
+        <div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2)">🥊 EL RETADOR v7 <span class="chico" style="font-weight:normal">(memoria 10: forma + clase — experimental, en duelo diario contra el titular)</span></div>
+        <div class="chico" style="padding:3px 0">` +
+        top7.map((f,i)=>`${i+1}º (${esc(f.mandil??'?')}) ${nomTab(f)} ${(100*f.prob).toFixed(0)}%${f.ptranq!=null?' · esperable '+(100*f.ptranq).toFixed(0)+'%':''} · jugable +$${fnum(f.pmin,2)}${goma(f)}${repr(f)}`).join(' — ') + `</div>`;
+      const con7 = f7.filter(f=>f.proy!=null).sort((a,b)=>(b.proy+bMed(b))-(a.proy+bMed(a))).slice(0,9);
+      if (con7.length >= 3){
+        const cola7 = f => esRebote(f) && f.alcance ? Math.max(f.alcance, bHi(f)) : bHi(f);
+        const lo7 = Math.min(...con7.map(f=>f.proy + bLo(f))) - 0.5;
+        const hi7 = Math.max(...con7.map(f=>f.proy + cola7(f))) + 0.5;
+        const pc7 = v => Math.max(0, Math.min(100, 100*(v-lo7)/(hi7-lo7)));
+        const piso7 = Math.max(...con7.map(f => f.proy + bMed(f)));
+        const mr7 = f => f.pool==='frac10' ? f.proy + 2.5 : f.pool==='frac6' ? f.proy + 1.0 :
+                         f.pool==='vpostreb' ? f.proy + 2.2 : null;
+        const mv7 = f => { const m = (f.razon||'').match(/fracasar por (\d+)|traspi[eé] \((-?\d+)\)/);
+          return m ? f.proy + Math.abs(+(m[1]||m[2]))/2 : null; };
+        const paso7 = (hi7 - lo7) > 16 ? 4 : (hi7 - lo7) > 8 ? 2 : 1;
+        let regla7 = '';
+        for (let t = Math.ceil(lo7/paso7)*paso7; t <= hi7; t += paso7)
+          regla7 += `<span style="position:absolute;left:${pc7(t)}%;transform:translateX(-50%);font-size:9px;color:var(--tinta2)">${t}</span>`;
+        html += `<div style="display:flex;height:13px;margin:3px 0 0">
+          <span style="flex:0 0 42%"></span>
+          <div style="flex:1;position:relative">${regla7}
+            <span style="position:absolute;left:${pc7(piso7)}%;transform:translateX(-50%);font-size:9px;color:#7a3cc8;font-weight:bold;background:#fff">${fnum(piso7)}</span>
+          </div></div>`;
+        for (const f of con7){
+          const cl = cola7(f);
+          const serio = (f.prob || 0) >= 0.15;
+          const puede = serio || (f.prob || 0) >= 0.07;
+          html += `<div style="display:flex;align-items:center;margin:2px 0">
+            <span class="betq" style="flex:0 0 42%;padding-right:7px;font-size:11px;line-height:1.3;align-self:center">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f, serio?'color:#7a3cc8':puede?'color:var(--tinta)':'color:var(--tinta2);font-weight:normal')} ${fnum(f.proy)} <span style="color:#5a2d96">◆${fnum(f.proy+bMed(f))}</span>${esRebote(f)?` <span style="font-weight:normal;color:#5a2d96">60%:${fnum(f.proy+P60[f.pool])}</span>`:''} <span style="font-weight:normal;color:var(--tinta2)">[${fnum(f.proy+bLo(f))}·${fnum(f.proy+bHi(f))}]</span>${lado(f)}${apz(f)}${f.pool==='bombalim'?' <b style="color:#a00" title="bomba limpia: saltó desde la normalidad — corre ~1 abajo de su línea nueva, fracasa 1 de cada 6, bomba nueva solo 13%">▼devuelve ⚠17%</b>':''}${esRebote(f)?rebFl(f):''}${(goma(f)+repr(f)).replace(' reprisa larga',' rep.LARGA').replace(' reprisa',' rep')}</span>
+            <div style="flex:1;position:relative;height:15px;background:rgba(0,0,0,.03)">
+              ${!esRebote(f)&&gomaAlc(f)? `<div title="el estirón de la goma 💣: hasta ${fnum(f.proy+gomaAlc(f))} (1 de cada 10)" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy+bHi(f))}%;width:${pc7(f.proy+gomaAlc(f))-pc7(f.proy+bHi(f))}%;background:rgba(212,160,23,.12);border:1px dashed var(--oro)"></div>`:''}
+              ${MALA[f.pool]!=null? `<div title="la cola mala: 1 de cada 10 cae hasta ${fnum(f.proy+MALA[f.pool])}" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy+MALA[f.pool])}%;width:${pc7(f.proy+bLo(f))-pc7(f.proy+MALA[f.pool])}%;background:rgba(168,35,27,.08);border:1px dashed var(--rojo)"></div>`:''}
+              ${cl>bHi(f)? `<div title="el estirón del rebote: hasta ${fnum(f.proy+cl)}" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy+bHi(f))}%;width:${pc7(f.proy+cl)-pc7(f.proy+bHi(f))}%;background:rgba(120,60,200,.12);border:1px dashed #7a3cc8"></div>`:''}
+              <div title="su día normal: ${fnum(f.proy+bLo(f))} a ${fnum(f.proy+bHi(f))}" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy+bLo(f))}%;width:${pc7(f.proy+bHi(f))-pc7(f.proy+bLo(f))}%;background:${serio?'rgba(120,60,200,.28)':puede?'rgba(120,60,200,.14)':'rgba(0,0,0,.10)'};border:1px solid ${puede?'#7a3cc8':'#bbb'}"></div>
+              <div title="su línea: ${fnum(f.proy)}" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy)}%;width:2px;background:var(--tinta);opacity:.7;z-index:2"></div><div title="su día más probable: ${fnum(f.proy+bMed(f))}" style="position:absolute;top:0;bottom:0;left:calc(${pc7(f.proy+bMed(f))}% - 5px);display:flex;align-items:center;font-size:10px;color:#5a2d96;z-index:4;text-shadow:0 0 2px #fff"><b>◆</b></div>
+              ${esRebote(f)? `<div title="6 de cada 10 rebotes no pasan de ${fnum(f.proy+P60[f.pool])}" style="position:absolute;bottom:0;height:60%;left:${pc7(f.proy+P60[f.pool])}%;width:2px;background:#5a2d96;z-index:3"></div>`:''}
+              <div style="position:absolute;top:0;bottom:0;left:${pc7(piso7)}%;width:2px;background:#7a3cc8"></div>
+            </div></div>`;
+        }
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+
+  // 📊 REPASO (09/07/26, pedido Matias): si la carrera YA corrio y esta tasada,
+  // pronostico congelado vs lo que realmente hicieron — para analizar errores
+  try {
+    if (pros && pros.length){
+      let reales = await q(`turf_performances?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&select=caballo,posicion,cuerpos,performance,dividendo`);
+      if (!reales || !reales.length){
+        // aun sin tasar (la escala no corrio): mostrar igual llegada + pagos
+        const ln = await q(`turf_lineas?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&select=caballo,posicion,cuerpos_acum,dividendo`);
+        reales = (ln||[]).map(l => ({caballo:l.caballo, posicion:l.posicion,
+          cuerpos:l.cuerpos_acum, performance:null, dividendo:l.dividendo}));
+      }
+      if (reales && reales.length){
+        const realCab = {}; for (const r of reales) realCab[(r.caballo||'').toUpperCase().trim()] = r;
+        const RB = {vet:0.6, n23:0.5, n1:1.0, frac10:3.0, frac6:1.4, frac6fav:0.8,
+                    vpostreb:2.7, bomba10:1.1, bombalim:-0.1, bombareb:2.2, repr:-0.7, repr60:-0.3, repr180:-1.4,
+                    repr365:-3.0, sobre:-1.2, debut:-1.7};
+        const porProb = [...pros].sort((a,b)=>(+b.prob)-(+a.prob));
+        const posNum = p => { const r = realCab[(p.caballo||'').toUpperCase().trim()];
+          if (!r) return 99; const n = parseInt(r.posicion); return isNaN(n) ? 98 : n; };
+        const ord = [...pros].sort((a,b)=> posNum(a)-posNum(b) || (+b.prob)-(+a.prob));
+        const ganadorReal = reales.find(r => r.posicion === '1');
+        const pickPro = porProb[0];
+        const pickReal = pickPro ? realCab[(pickPro.caballo||'').toUpperCase().trim()] : null;
+        const proGan = ganadorReal ? ord.find(p => (p.caballo||'').toUpperCase().trim() === (ganadorReal.caballo||'').toUpperCase().trim()) : null;
+        html += `<div style="border-top:2px solid var(--tinta);margin:8px 12px 10px;padding-top:6px">
+          <div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2)">📊 REPASO — el pronóstico de la mañana vs lo que pasó</div>
+          <div class="chico" style="padding:3px 0">${pickReal ? `El pick <b>${esc(pickPro.caballo)}</b> (${(100*pickPro.prob).toFixed(0)}%) llegó <b>${pickReal.posicion==='1'?'<span style="color:var(--verde)">1º ✓</span>':esc(pickReal.posicion)+'º'}</b>` : ''}${ganadorReal && proGan ? ` · ganó <b>${esc(ganadorReal.caballo)}</b> (el motor le daba ${(100*proGan.prob).toFixed(0)}%${ganadorReal.dividendo?', pagó $'+(+ganadorReal.dividendo).toFixed(2):''})` : ''}</div>`;
+        const filaCab = {}; for (const f of filas) filaCab[(f.caballo||'').toUpperCase().trim()] = f;
+        const dl = (v, emo) => v == null ? '<td style="text-align:right;color:var(--tinta2)">—</td>' :
+          `<td style="text-align:right;font-weight:bold;color:${v>=6?'var(--verde)':v>=2?'#2a7':v>-2?'var(--tinta2)':v>-6?'#a60':'var(--rojo)'}">${v>0?'+':''}${v.toFixed(1)}${emo?(v>=6?' 💣':v<=-6?' 💥':''):''}</td>`;
+        html += `<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12px;min-width:660px;width:100%">
+          <tr style="font:bold 10px 'Arial Narrow',Arial,sans-serif;letter-spacing:1px;color:var(--tinta2);text-align:right"><th style="text-align:left">#</th><th style="text-align:left">CABALLO</th><th>PROB</th><th>LLEGÓ</th><th>HIZO</th><th>ÚLTIMA</th><th>vs ÚLT</th><th>LÍNEA</th><th>vs LÍNEA</th><th>◆ESPER.</th><th>vs ◆</th><th>PAGABA</th></tr>`;
+        for (const p of ord){
+          const r = realCab[(p.caballo||'').toUpperCase().trim()];
+          const fx = filaCab[(p.caballo||'').toUpperCase().trim()];
+          const ult = fx && fx.ult != null ? +fx.ult : null;
+          const proy = p.proy != null ? +p.proy : null;
+          const esper = proy != null ? proy + (RB[p.pool] ?? 0.6) : null;
+          const perfR = r && r.performance != null ? +r.performance : null;
+          const g = r && r.posicion === '1';
+          html += `<tr style="border-top:1px solid rgba(0,0,0,.12)${g?';background:rgba(212,160,23,.18)':''}">
+            <td style="text-align:left">${esc(p.mandil??'?')}</td>
+            <td style="text-align:left;${g?'font-weight:bold;':''}white-space:nowrap">${esc(p.caballo)}${g?' 🏆':''} <span class="chico" style="color:var(--tinta2)">${esc(p.pool||'')}</span></td>
+            <td style="text-align:right">${(100*p.prob).toFixed(0)}%</td>
+            <td style="text-align:right;white-space:nowrap">${r?esc(r.posicion)+'º'+(r.cuerpos!=null&&r.posicion!=='1'?' a '+(+r.cuerpos).toFixed(1):''):'—'}</td>
+            <td style="text-align:right;font-weight:bold">${perfR!=null?fnum(perfR):(r?'s/t':'—')}</td>
+            <td style="text-align:right">${ult!=null?fnum(ult):'—'}</td>
+            ${dl(perfR!=null&&ult!=null?perfR-ult:null)}
+            <td style="text-align:right">${proy!=null?fnum(proy):'—'}</td>
+            ${dl(perfR!=null&&proy!=null?perfR-proy:null,true)}
+            <td style="text-align:right">${esper!=null?fnum(esper):'—'}</td>
+            ${dl(perfR!=null&&esper!=null?perfR-esper:null)}
+            <td style="text-align:right;font-variant-numeric:tabular-nums">${r&&r.dividendo?'$'+(+r.dividendo).toFixed(2):'—'}</td></tr>`;
+        }
+        html += `</table></div><div class="chico" style="color:var(--tinta2);padding-top:3px">HIZO = perf real (s/t = sin tasar aún) · ÚLTIMA = su corrida anterior · LÍNEA = el promedio que traía · ◆ = el día esperado según su estado · vs = HIZO menos cada vara (verde adelantó, rojo atrasó; 💣 bomba / 💥 fracaso vs línea) · PAGABA = su sport. Fila dorada = ganador.</div></div>`;
+      }
+    }
+  } catch(e) { /* repaso opcional: sin resultados no rompe nada */ }
+
+  if (sintesis) html += `<div class="sintesis">“${esc(sintesis)}”</div>`;
+
+  // PANORAMA: todo el lote de un vistazo, como la hoja del programa impreso
+  if (!corrida){
+    let pan = `<div style="margin:0 12px 10px"><div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2);padding:4px 0">PANORAMA DEL LOTE <span class="chico" style="font-weight:normal">— deslizá el dedo → para ver todo</span></div>`;
+    if (c.apuestas)
+      pan += `<div class="chico" style="white-space:pre-line;border:1px dotted var(--tinta2);padding:4px 6px;margin-bottom:4px">🎫 <b>SE JUEGA:</b> ${esc(c.apuestas)}</div>`;
+    // columnas en el MISMO orden que la hoja impresa de la revista:
+    // STUD | ultimas | mandil | anotado | fecha ultima | jockey | e k s/p | padre-madre | cuidador (+ % del modelo)
+    pan += `<div class="scroll"><table class="panorama" style="font-size:13px">
+      <tr><th>Stud</th><th>Últimas (viejas→nuevas)</th><th>M</th><th>Anotado</th><th>Última vez</th><th>Jockey</th><th class="num">E</th><th class="num">Kg</th><th>S/P</th><th>Padre y madre</th><th>Cuidador</th><th class="num">%</th></tr>`;
+    // cada token de ULTIMAS (viejas→nuevas) linkea a esa carrera pasada:
+    // el i-esimo desde la DERECHA (mas nueva) = la i-esima perf; '--' o sin perf = sin link
+    const ultLinks = f => {
+      const ts = (f.ultimas||'').split(/\s+/).filter(Boolean);
+      return ts.map((t, i) => {
+        const txt = esc(t.padStart(2));
+        const p = (f.ps||[])[ts.length-1-i];
+        if (/^-+$/.test(t) || !p || p.carrera_nro==null) return txt;
+        return `<span class="link" title="${p.fecha.slice(2).split('-').reverse().join('/')} ${p.hipodromo} ${p.carrera_nro}ª" onclick="verCarreraHistorica('${p.fecha}','${p.hipodromo}',${p.carrera_nro})">${txt}</span>`;
+      }).join(' ');
+    };
+    for (const f of filas){
+      const ult = f.ps && f.ps[0] ? `${f.ps[0].fecha.slice(2).split('-').reverse().join('/')} · ${esc(f.ps[0].posicion||'?')}º` : 'debuta';
+      pan += `<tr>
+        <td class="chico">${esc((f.caballeriza||'').split(',')[0])}</td>
+        <td style="font-family:'Courier New',monospace;white-space:pre">${ultLinks(f)}</td>
+        <td style="white-space:nowrap">${btnJ(c.nro,f)}<b>${esc(f.mandil??'?')}</b></td>
+        <td>${nomTab(f)}</td>
+        <td class="chico">${ult}</td>
+        <td class="chico">${esc((f.jockey||'').split(',')[0])}</td>
+        <td class="num">${f.edad||''}</td>
+        <td class="num" style="white-space:nowrap">${fnum(f.kg,0)}${apzG(f)}</td>
+        <td class="chico">${esc([f.sexo,f.pelaje].filter(Boolean).join(''))}</td>
+        <td class="chico">${esc(f.padre||'')}${f.madre? ' y '+esc(f.madre):''}</td>
+        <td class="chico">${esc((f.cuidador||'').split(',')[0])}</td>
+        <td class="num"><b>${f.prob!=null? (f.prob*100).toFixed(0)+'%':''}</b></td>
+      </tr>`;
+    }
+    html += pan + `</table></div>`;
+    if (c.favoritos_revista)
+      html += `<div style="border-top:2px solid var(--oro);margin-top:6px;padding-top:6px;font-size:14px">🏆 <b>Favoritos de la revista:</b> ${esc(c.favoritos_revista)} <span class="chico">(favorito · enemigo · tercero)</span></div>`;
+    html += `</div>`;
+  }
+
+  // viejos conocidos: anotados de hoy que ya se enfrentaron
+  if (enfr && enfr.length){
+    const parejas = {};
+    for (const e of enfr){
+      const k = e.caballo_a + '|' + e.caballo_b;
+      const pj = parejas[k] ||= {a:e.caballo_a, b:e.caballo_b, n:0, wa:0, wb:0, ult:null};
+      pj.n++;
+      if (+e.margen_ab > 0.1) pj.wa++; else if (+e.margen_ab < -0.1) pj.wb++;
+      pj.ult = e;  // vienen ordenados por fecha: queda el ultimo
+    }
+    const lista = Object.values(parejas).sort((x,y)=>y.n-x.n).slice(0,6);
+    html += `<div style="margin:0 12px 10px;border:1px solid var(--tinta);background:#f1ead7;padding:7px 11px">
+      <div style="font:bold 12px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;margin-bottom:3px">⚔ VIEJOS CONOCIDOS</div>` +
+      lista.map(p => {
+        const m = +p.ult.margen_ab;
+        const quien = m > 0.1 ? p.a : m < -0.1 ? p.b : null;
+        const ultTxt = quien ? `${esc(quien)} por ${fnum(Math.abs(m))}` : 'llegaron juntos';
+        return `<div class="chico" style="padding:2px 0"><b>${esc(p.a)}</b> vs <b>${esc(p.b)}</b>:
+          ${p.n} cruce${p.n>1?'s':''} (${p.wa}-${p.wb}) · último ${p.ult.fecha.slice(5).split('-').reverse().join('/')}: ${ultTxt}</div>`;
+      }).join('') + `</div>`;
+  }
+
+  const proysD = filas.map(x => x.proy).filter(v => v != null);
+  const mejorD = proysD.length ? Math.max(...proysD) : null;
+  for (const f of filas){
+    const icono = f.pat ? (ICONO[f.pat.tipo]||'') : '';
+    const peligro = f.pat && /PELIGRO|al limite|cumple el ciclo/.test(f.pat.pronostico||'');
+    const rebote = f.pat && /REBOTE|SOBRE-CASTIGADO/.test(f.pat.pronostico||'');
+    let cuerpo = '';
+    if (f.razon) cuerpo += `<div class="coment">📌 <i>${esc(f.razon)}</i></div>`;
+    // ⚓ contra qué está midiendo este caballo
+    // los de 2-3 años sin etiqueta de camada tambien son de la generacion nueva (debutaron tarde)
+    const GEN_NUEVA = '2025/26';
+    let camF = camCab[K(f)];
+    if (!camF && (f.edad === 2 || f.edad === 3)) camF = GEN_NUEVA;
+    if (camF && ESTADO_CAMADAS[camF] !== undefined){
+      const pu = ESTADO_CAMADAS[camF];
+      if (pu === 0)
+        cuerpo += `<div class="coment chico">⚓ <b>Regla: solo su generación (${esc(camF)})</b> — todavía sin cruces con caballos mayores: sus números comparan únicamente entre compañeros de camada</div>`;
+      else if (pu < 60)
+        cuerpo += `<div class="coment chico">⚓ Regla general — generación ${esc(camF)} recién soldada (${pu} puentes: margen de 1-2 cpos vs los mayores)</div>`;
+    }
+    // 🌧 barreros: como le va cuando la pista no está normal
+    const bb = barrCab[K(f)];
+    if (bb && Math.abs(+bb.ventaja_barro) >= 3){
+      const v = +bb.ventaja_barro;
+      const txt = v > 0
+        ? `🌧 <b class="pos">BARRERO: mejora ${v.toFixed(0)} cuerpos en pista pesada/húmeda</b> (${bb.corridas_barro} corridas en el barro)`
+        : `☀️ <b class="neg">Solo pista seca: pierde ${Math.abs(v).toFixed(0)} cuerpos en el barro</b> (${bb.corridas_barro} corridas)`;
+      cuerpo += `<div class="coment" ${pistaMojada? 'style="background:#e8f0f5;padding:4px 6px;border-radius:4px"':''}>${txt}${pistaMojada? ' — <b>¡HOY LA PISTA NO ESTÁ NORMAL!</b>':''}</div>`;
+    }
+    // 🧬 debutante: la ley del padre + la edad (medido 07/07/26 sobre 14k
+    // debuts: hijos de padre flojo debutan -4 vs su lote / bueno al nivel;
+    // el que sale tarde nunca es crack — pico tipico -12 vs -4 del precoz)
+    if (!corrida && f.ps.length === 0){
+      const pedD = pedCab[f.rp_id] || pedCab[f.caballo] || {};
+      const padreD = pedD.padre || f.padre;
+      const stD = padreD ? (PADRES_D[padreD] || null) : null;
+      const mesesD = pedD.nacimiento ? Math.round((new Date(c.fecha) - new Date(pedD.nacimiento)) / 2592e6) : null;
+      const txD = [];
+      if (stD && stD.ab != null){
+        // vara en orden de justicia (idea Matias 07/07): 1º hermanos de edad
+        // parecida, 2º los ultimos 3 si son frescos, 3º global con aviso de viejo
+        const mAgo = d => Math.round((new Date(c.fecha) - new Date(d + '-15')) / 2592e6);
+        const bk = mesesD == null ? null : mesesD <= 30 ? 'e1' : mesesD <= 42 ? 'e2' : 'e3';
+        const BKTXT = {e1:'precoces, ≤30m', e2:'31-42m', e3:'tardíos, +42m'};
+        let base, desc;
+        if (bk && stD[bk] && stD[bk][0] >= 3){
+          base = stD[bk][1];
+          desc = `sus <b>${stD[bk][0]} hermanos de su misma franja de salida</b> (${BKTXT[bk]}) debutaron con perf <b>${fnum(base)}</b> de promedio`;
+        } else if (stD.u3 != null && stD.f3 && mAgo(stD.f3) <= 7){
+          base = stD.u3;
+          desc = `sus <b>últimos 3 hermanos</b> (el más nuevo debutó ${stD.f3}) arrancaron con perf <b>${fnum(base)}</b> de promedio`;
+        } else {
+          base = stD.ab;
+          desc = `sus ${stD.n} hermanos (<b>todas las edades de salida</b> — sin f.nac. no puedo comparar solo los de su edad) debutaron con perf <b>${fnum(base)}</b> de promedio (la mitad arrancó entre ${fnum(stD.a1)} y ${fnum(stD.a3)})`
+               + (mAgo(stD.ul) > 18 ? ` <b class="neg">— dato viejo: el último debutó hace ${mAgo(stD.ul)} meses ⚠</b>` : '');
+        }
+        txD.push(`${desc} · ganan de entrada el ${stD.gp}%`);
+        if (mejorD != null){
+          const gap = mejorD - base;
+          txD.push(gap <= 2 ? `<b class="pos">esa vara lo deja A TIRO del puntero (línea ${fnum(mejorD)}) ✓</b>`
+            : stD.a3 >= mejorD - 2 ? `el puntero está en ${fnum(mejorD)}: solo lo alcanza con un debut de los BUENOS de su sangre`
+            : `<b class="neg">difícilmente gane: hasta los buenos debuts de su sangre (${fnum(stD.a3)}) quedan a ${fnum(mejorD - stD.a3)} del puntero (${fnum(mejorD)}) ⚠</b>`);
+        }
+      }
+      if (mesesD != null && mesesD >= 20)
+        txD.unshift(`sale a los <b>${mesesD} meses</b> — franja ${mesesD<=30?'<b class="pos">precoz (≤30m) ✓</b>':mesesD>42?'<b class="neg">TARDÍA (+42m) ⚠: el crack tardío no existe</b>':'normal (31-42m)'}`);
+      if (txD.length)
+        cuerpo += `<div class="coment">🧬 <b>DEBUTA${padreD?' · hijo de '+esc(padreD):''}:</b> ${txD.join(' · ')}</div>`;
+    }
+    if (f.pat && f.pat.tipo_matias)
+      cuerpo += `<div class="coment">🧭 <b>Su campaña (método Matías):</b> ${esc(f.pat.tipo_matias)} <span class="chico dim">— describe cómo corrió, no lo que hará</span></div>`;
+    if (f.pat && f.pat.tipo && f.pat.tipo !== 'SIN_PATRON'){
+      let posCiclo = '';
+      if (f.pat.tipo === 'CICLICO' && f.pat.desde_fracaso != null && f.pat.ciclo)
+        posCiclo = ` · lleva <b>${f.pat.desde_fracaso}</b> desde su último fracaso (su ciclo: ~${Math.round(f.pat.ciclo)})`;
+      if (f.pat.tipo === 'ESCALADOR' && f.pat.racha_actual != null)
+        posCiclo = ` · lleva <b>${f.pat.racha_actual}</b> subida${f.pat.racha_actual==1?'':'s'} seguida${f.pat.racha_actual==1?'':'s'}`;
+      cuerpo += `<div class="coment">${icono} <b>${f.pat.tipo==='EN_DECLIVE'?'SOBRE-CASTIGADO':f.pat.tipo}</b>${f.pat.ciclo&&f.pat.tipo==='CICLICO'?'':''}${posCiclo} — <i>${esc(f.pat.pronostico||'')}</i></div>`;
+    } else {
+      const pinta = pintaPara(f.ps);
+      if (pinta)
+        cuerpo += `<div class="coment">🔍 <b>PINTA PARA ${pinta.t}</b> — ${pinta.r} <span class="chico">(provisorio: ${f.ps.length} carreras)</span></div>`;
+      else if (!f.pat && f.ps.length > 0)
+        cuerpo += `<div class="coment chico">🔍 patrón: aún sin historial suficiente (${f.ps.length} carrera${f.ps.length==1?'':'s'})</div>`;
+      else if (f.pat && f.pat.tipo === 'SIN_PATRON')
+        cuerpo += `<div class="coment chico">🔍 corrió mucho pero no muestra un patrón limpio</div>`;
+    }
+    // ---- bloque PARA HOY (todo junto y etiquetado) ----
+    const ejsF = ejsCab[K(f)];
+    const eHoy = apronteAntes(ejsF, c.fecha);
+    let hoyHtml = '';
+    let hayComparacionDirecta = false;
+    if (eHoy){
+      const eAnt = f.ps.length ? apronteAntes(ejsF, f.ps[0].fecha) : null;
+      hayComparacionDirecta = !!eAnt;
+      let txt = `🏇 <b>Apronte cronometrado:</b> ${fmtApronte(eHoy)}`;
+      if (eAnt){
+        const dv = (eHoy.velocidad - NORMA_APRONTE(eHoy.distancia_m))
+                 - (eAnt.velocidad - NORMA_APRONTE(eAnt.distancia_m));
+        txt += dv >= 0.15 ? ` — <b class="pos">MEJOR que con el que fue a su última (${fmtApronte(eAnt)}) → puede mejorar</b>`
+             : dv <= -0.15 ? ` — <b class="neg">más flojo que el de su última (${fmtApronte(eAnt)})</b>`
+             : ` — similar al de su última (${fmtApronte(eAnt)})`;
+      } else {
+        txt += ` <span class="chico">(su carrera anterior no tiene apronte publicado para comparar)</span>`;
+      }
+      hoyHtml += `<div class="coment">${txt}</div>`;
+    }
+    // la tendencia general solo si NO hay comparacion directa (evita contradicciones)
+    const tn = hayComparacionDirecta ? null : tendCab[K(f)];
+    if (tn){
+      const m = +tn.mejora;
+      const veredicto = m >= 0.15 ? `<b class="pos">⏱ Viene MEJORANDO los tiempos de práctica</b> (+${fnum(m,2)} m/s)`
+                      : m <= -0.15 ? `<b class="neg">⏱ Viene aflojando en las prácticas</b> (${fnum(m,2)} m/s)`
+                      : `⏱ Tiempos de práctica estables`;
+      hoyHtml += `<div class="coment">${veredicto} <span class="chico">(${tn.aprontes} aprontes medidos)</span></div>`;
+    }
+    if (f.com){
+      if (f.com.entrenamientos) hoyHtml += `<div class="coment"><i>🏃 Entrenamiento (texto de la revista): ${esc(f.com.entrenamientos)}</i></div>`;
+      if (f.com.partida_final) hoyHtml += `<div class="coment"><i>🚪 Partida final: ${esc(f.com.partida_final)}</i></div>`;
+      if (f.com.comentario) hoyHtml += `<div class="coment">💬 ${esc(f.com.comentario)}</div>`;
+    }
+    if (hoyHtml)
+      cuerpo += `<div style="border:1px dashed var(--tinta2);padding:4px 8px;margin:6px 0;background:#f3edda">
+        <div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2)">PARA HOY</div>${hoyHtml}</div>`;
+    // ---- la campaña (como la revista: vieja a la izquierda, ultima a la derecha) ----
+    cuerpo += `<div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2);padding-top:4px">SUS CARRERAS</div>`;
+    cuerpo += `<div class="lineas">` + (f.ps.length ?
+              f.ps.slice().reverse().map(p => miniLinea(p, f.caballo, llegMap, ejsF)).join('') :
+              '<div class="ln dim">debutante — sin historia en la base</div>') + `</div>`;
+    cuerpo += `<div style="padding-top:5px"><span class="link chico" onclick="verCaballo('${esc(f.caballo).replace(/'/g,"\\'")}',false,${f.caballo_rp_id??'null'})">Ficha completa del ejemplar →</span></div>`;
+    const ped = f.ped || {};
+    const padre = ped.padre || f.padre, madre = ped.madre || f.madre;
+    const SEXO_TXT = {H:'Hembra', M:'Macho'};
+    const PELAJE_TXT = {Z:'zaino', ZD:'zaino doradillo', ZC:'zaino colorado', ZO:'zaino oscuro',
+      A:'alazán', AT:'alazán tostado', AR:'alazán ruano', T:'tostado', TO:'tostado oscuro',
+      M:'moro', G:'gateado', B:'blanco', R:'rosillo', C:'colorado', O:'overo'};
+    const sexoTxt = ped.sexo || SEXO_TXT[f.sexo] || f.sexo;
+    const pelajeTxt = ((ped.pelaje || PELAJE_TXT[f.pelaje] || f.pelaje || '') + '').toLowerCase();
+    let pedigri = [];
+    if (sexoTxt) pedigri.push(esc(sexoTxt) + (pelajeTxt? ' '+esc(pelajeTxt):'') + (f.edad? ', '+f.edad+' años':''));
+    if (padre) pedigri.push(`por <b>${esc(padre)}</b> y <b>${esc(madre||'?')}</b>` + (ped.abuelo_materno? ' por '+esc(ped.abuelo_materno):''));
+    if (ped.criador) pedigri.push('criado en '+esc(ped.criador));
+    html += `<div class="cab" id="tab-${c.hipodromo}-${c.nro}-${esc(f.mandil??'')}">
+      <div class="cab-bar">
+        ${btnJ(c.nro,f)}<div class="mandil">${esc(f.mandil??'?')}</div>
+        <div class="nombre condensada"><span class="cabn" title="ficha completa del ejemplar" onclick="verCaballo('${esc(f.caballo).replace(/'/g,"\\'")}',false,${f.caballo_rp_id??'null'})">${esc(f.caballo)}</span> ${icono}
+          ${f.senal==='JOYA'?'<span class="etiqueta et-joya">🎯</span>':''}
+          ${f.senal==='VALOR'?'<span class="etiqueta et-valor">💰</span>':''}
+          ${peligro?'<span class="etiqueta et-peligro">⚠</span>':''}
+          ${rebote&&f.senal!=='VALOR'?'<span class="etiqueta et-valor">↗</span>':''}</div>
+        <div class="kgj">${fnum(f.kg,0)} kg${apzG(f)}${corrida&&f.posicion? ' · llegó '+esc(f.posicion)+'º':''}<br>${esc((f.jockey||'').split(',')[0])}</div>
+        <div class="prob">${f.prob!=null ? (f.prob*100).toFixed(0)+'%' : (f.ult!=null? fnum(f.ult):'s/d')}</div>
+      </div>
+      ${pedigri.length? `<div class="pedigri">${pedigri.join(' · ')}</div>`:''}
+      <div class="cab-cuerpo">${cuerpo}</div>
+    </div>`;
+  }
+  target.innerHTML = html;
+  // arranca mostrando la ultima (derecha); deslizando hacia la izquierda vas al pasado
+  const alFinal = () => target.querySelectorAll('.lineas').forEach(el => { el.scrollLeft = el.scrollWidth; });
+  requestAnimationFrame(alFinal);
+  setTimeout(alFinal, 150);
+}
+
+// ---------- EJEMPLAR ----------
+async function buscar(term, sinPush){
+  const t = ((term ?? document.getElementById('busca').value) || '').trim();
+  if (!t) return;
+  FICHA_ESTADO = {tipo:'busqueda', q: t};
+  const cont = document.getElementById('fichaCab');
+  cont.innerHTML = '<div class="aviso">Buscando…</div>';
+  const rs = await q(`turf_caballos?nombre=ilike.*${encodeURIComponent(t)}*&limit=25&select=rp_id,nombre,sexo,padre,madre,nacimiento`);
+  if (!rs.length){ cont.innerHTML = '<div class="aviso">No aparece en la base.</div>'; return; }
+  if (rs.length === 1) return verCaballo(rs[0].nombre, sinPush, rs[0].rp_id);
+  cont.innerHTML = '<div class="panel">' + rs.map(r =>
+    `<div style="padding:5px 0;border-bottom:1px dotted #b9ac8e"><span class="link" onclick="verCaballo('${esc(r.nombre).replace(/'/g,"\\'")}',false,${r.rp_id??'null'})">${esc(r.nombre)}</span>
+     <span class="chico"> ${esc(r.sexo||'')}${r.nacimiento? ' · nac. '+r.nacimiento.slice(0,4):''} ${r.padre? '· '+esc(r.padre)+' y '+esc(r.madre||''):''}</span></div>`).join('') + '</div>';
+}
+
+// homónimos (07/07/26, caso NIGHT LIFE): el nombre NO identifica un caballo —
+// se resuelve a rp_id por la campaña (la generación que contiene refFecha, o la más reciente)
+async function resolverRp(nombre, refFecha){
+  let cabs = [];
+  try { cabs = await q(`turf_caballos?nombre=eq.${encodeURIComponent(nombre)}&select=rp_id`); } catch(e){}
+  const rps = cabs.map(c => c.rp_id).filter(r => r != null);
+  if (rps.length <= 1) return {rp: rps[0] ?? null, otros: [], span: {}};
+  const span = {};
+  try {
+    const acts = await q(`turf_lineas?caballo=eq.${encodeURIComponent(nombre)}&select=caballo_rp_id,fecha&order=fecha.desc&limit=400`);
+    for (const a of acts){
+      if (a.caballo_rp_id == null) continue;
+      const s = span[a.caballo_rp_id] ||= {min: a.fecha, max: a.fecha};
+      if (a.fecha < s.min) s.min = a.fecha;
+      if (a.fecha > s.max) s.max = a.fecha;
+    }
+  } catch(e){}
+  const dist = r => { const s = span[r];
+    if (!s) return 9e15;
+    if (!refFecha) return -new Date(s.max).getTime();   // sin referencia: gana la campaña más nueva
+    if (refFecha >= s.min && refFecha <= s.max) return 0;
+    return Math.min(Math.abs(new Date(refFecha)-new Date(s.min)), Math.abs(new Date(refFecha)-new Date(s.max)));
+  };
+  rps.sort((a,b) => dist(a) - dist(b));
+  return {rp: rps[0], otros: rps.slice(1), span};
+}
+
+async function verCaballo(nombre, sinPush, rpId, refFecha){
+  if (!sinPush) navPush();
+  ir('caballo');
+  document.getElementById('busca').value = nombre;
+  const cont = document.getElementById('fichaCab');
+  cont.innerHTML = '<div class="aviso">Cargando campaña…</div>';
+  let otros = [], spanH = {};
+  if (rpId == null){
+    const rr = await resolverRp(nombre, refFecha);
+    rpId = rr.rp; otros = rr.otros; spanH = rr.span;
+  }
+  FICHA_ESTADO = {tipo:'caballo', nombre, rp: rpId};
+  const F = rpId != null ? `caballo_rp_id=eq.${rpId}` : `caballo=eq.${encodeURIComponent(nombre)}`;
+  const FC = rpId != null ? `rp_id=eq.${rpId}` : `nombre=eq.${encodeURIComponent(nombre)}`;
+  const [rat, perfs, pat, cab, ejs] = await Promise.all([
+    q(`turf_rating_maestro?${F}&select=rating,camada,corridas`),
+    q(`turf_performances?${F}&order=fecha.desc&limit=100&select=fecha,hipodromo,carrera_nro,distancia,pista,estado,kg,posicion,dist_acum,dividendo,desarrollo,incidencias,tiempo,performance,video_url,peso_animal,condicion,premio,jockey,cuidador,herraje`),
+    q(`turf_patrones?${F}&select=tipo,pronostico,ciclo,sd`),
+    q(`turf_caballos?${FC}&select=sexo,pelaje,nacimiento,padre,madre,abuelo_materno,criador`),
+    q(`turf_ejercicios?${F}&order=fecha.desc&limit=100&select=fecha,tipo,detalle,distancia_m,tiempo_seg,velocidad`)
+  ]);
+  const r = rat[0], p0 = pat[0], cb = cab[0] || {};
+  // caballos historicos sin niveles resueltos: tarjetas con la campaña CRUDA
+  let perfsV = perfs, crudoAviso = '';
+  if (!perfs.length){
+    try {
+      const crudas = await q(`turf_resultados?${F}&select=posicion,dist_acum,dividendo,kg,desarrollo,incidencias,peso_animal,carrera:carrera_id(fecha,hipodromo,nro,distancia,pista,estado,tiempo,video_url,condicion,premio)&limit=200`);
+      const conC = crudas.filter(x=>x.carrera);
+      if (conC.length){
+        perfsV = conC.map(x => ({
+          fecha: x.carrera.fecha, hipodromo: x.carrera.hipodromo, carrera_nro: x.carrera.nro,
+          distancia: x.carrera.distancia, pista: x.carrera.pista, estado: x.carrera.estado,
+          kg: x.kg, posicion: x.posicion, dist_acum: x.dist_acum, dividendo: x.dividendo,
+          desarrollo: x.desarrollo, incidencias: x.incidencias, tiempo: x.carrera.tiempo,
+          performance: null, video_url: x.carrera.video_url, peso_animal: x.peso_animal,
+          condicion: x.carrera.condicion, premio: x.carrera.premio
+        })).sort((a,b)=> a.fecha < b.fecha ? 1 : -1);
+        crudoAviso = `<div class="chico" style="padding:2px 0 6px;color:var(--rojo)"><b>CAMPAÑA RESCATADA</b> — llegadas reales tal cual; las perfs en cuerpos salen con el próximo recálculo de la escala</div>`;
+      }
+    } catch(e) {}
+  }
+  // llegadas de cada carrera de la campaña (contra quien corrio, como la revista)
+  const dsetF = [...new Set(perfsV.map(p => p.fecha))];
+  let llegMapF = {};
+  for (let i = 0; i < dsetF.length; i += 40){
+    try {
+      const ll = await q(`turf_llegadas_top?fecha=in.(${dsetF.slice(i,i+40).join(',')})&select=fecha,hipodromo,carrera_nro,llegada,corrieron&limit=1000`);
+      for (const l of ll) llegMapF[`${l.fecha}|${l.hipodromo}|${l.carrera_nro}`] = l;
+    } catch(e) {}
+  }
+  const btnVolver = `<button class="boton" onclick="volver()" style="margin-bottom:10px">← Volver</button>`;
+  const pedLinea = cb.padre ?
+    `${esc(cb.sexo||'')} ${esc((cb.pelaje||'').toLowerCase())}${cb.nacimiento? ', nac. '+cb.nacimiento:''} — por <b>${esc(cb.padre)}</b> y <b>${esc(cb.madre||'?')}</b>${cb.abuelo_materno? ' por '+esc(cb.abuelo_materno):''}${cb.criador? ' · criado en '+esc(cb.criador):''}` : '';
+  let html = btnVolver + `<div class="panel">
+    <div style="border-bottom:3px double var(--tinta); padding-bottom:8px; margin-bottom:10px">
+      <span style="font-size:24px;font-weight:bold;letter-spacing:1px">${esc(nombre)}</span>
+      ${pedLinea? `<div style="font-size:13px;font-style:italic;color:var(--tinta2)">${pedLinea}</div>`:''}
+      <div class="chico">${r? `Rating maestro <b>${fnum(r.rating)}</b> cpos · ${r.corridas} corridas ${r.camada? '· camada '+r.camada:''}`:'sin rating'}
+      ${p0? ` · ${ICONO[p0.tipo]||''} ${p0.tipo==='EN_DECLIVE'?'SOBRE-CASTIGADO':p0.tipo}${p0.ciclo? ' (fracasó cada ~'+Math.round(p0.ciclo)+' en su historia)':''} — <i>${esc(p0.pronostico||'')}</i>`:''}</div>
+      ${otros.length? `<div class="chico" style="color:var(--rojo)">⚠ ${otros.length===1?'hay OTRO ejemplar':'hay otros '+otros.length+' ejemplares'} con este nombre (generación distinta): `+
+        otros.map(o=>`<span class="link" onclick="verCaballo('${esc(nombre).replace(/'/g,"\\'")}',false,${o})">ver campaña ${spanH[o]? spanH[o].min.slice(0,4)+'–'+spanH[o].max.slice(0,4):'vieja'}</span>`).join(' · ') + `</div>`:''}
+      ${ejs.length? `<div class="chico" style="padding-top:4px">🏃 ${ejs.slice(0,3).map(e=>e.fecha.slice(5)+' '+esc(e.tipo)+': '+esc(e.detalle)).join(' · ')}</div>`:''}
+    </div>
+    ${crudoAviso}<div class="lineas">` +
+    (perfsV.length ? perfsV.slice().reverse().map(p => miniLinea(p, nombre, llegMapF, ejs)).join('')
+                  : '<div class="ln dim">sin carreras en la base</div>') +
+    `</div></div>`;
+  cont.innerHTML = html;
+  const alFinalF = () => cont.querySelectorAll('.lineas').forEach(el => { el.scrollLeft = el.scrollWidth; });
+  requestAnimationFrame(alFinalF);
+  setTimeout(alFinalF, 150);
+}
+
+// ---------- CARRERA HISTORICA: la llegada completa de una carrera pasada ----------
+async function verCarreraHistorica(fecha, hipo, nro, sinPush){
+  if (!sinPush) navPush();
+  ir('caballo');
+  FICHA_ESTADO = {tipo:'ch', fecha, hipo, nro};
+  const cont = document.getElementById('fichaCab');
+  cont.innerHTML = '<div class="aviso">Abriendo la carrera…</div>';
+  const [cs, perfs] = await Promise.all([
+    q(`turf_carreras?fecha=eq.${fecha}&hipodromo=eq.${hipo}&nro=eq.${nro}&select=hora,premio,distancia,pista,estado,condicion,tiempo,video_url,premios`).catch(()=>[]),
+    q(`turf_performances?fecha=eq.${fecha}&hipodromo=eq.${hipo}&carrera_nro=eq.${nro}&limit=100&select=caballo,caballo_rp_id,posicion,dist_acum,kg,jockey,dividendo,desarrollo,incidencias,performance,peso_animal,herraje`)
+  ]);
+  let filas = perfs;
+  if (!filas.length)  // carrera sin tasar: la llegada cruda
+    filas = await q(`turf_lineas?fecha=eq.${fecha}&hipodromo=eq.${hipo}&carrera_nro=eq.${nro}&limit=100&select=caballo,caballo_rp_id,posicion,dist_acum,kg,jockey,dividendo`).catch(()=>[]);
+  const c = cs[0] || {};
+  const npos = p => { const x = parseInt(p.posicion,10); return isNaN(x) ? 999 : x; };
+  filas.sort((a,b) => npos(a)-npos(b));
+  const linkCab = (n, rp) => `<span class="link" onclick="verCaballo('${esc(n).replace(/'/g,"\\'")}',false,${rp??'null'},'${fecha}')">${esc(n)}</span>`;
+  cont.innerHTML = `<button class="boton" onclick="volver()" style="margin-bottom:10px">← Volver</button>
+  <div class="panel">
+    <div style="border-bottom:3px double var(--tinta);padding-bottom:8px;margin-bottom:10px">
+      <span style="font-size:22px;font-weight:bold;letter-spacing:1px">${nro}ª ${HIPOS[hipo]||esc(hipo)} — ${fecha.slice(2).split('-').reverse().join('/')}</span>
+      <div class="chico">${c.distancia? c.distancia+' m · ':''}${esc(c.pista||'')} ${esc(c.estado||'')}${c.tiempo? ' · '+esc(c.tiempo):''}${c.premio? ' · '+esc(c.premio):''}${c.premios&&c.premios['1']? ' · 1º $'+(+c.premios['1']).toLocaleString('es-AR'):''}${c.video_url? ' · <a href="'+esc(c.video_url)+'" target="_blank" style="color:var(--rojo)">▶ VIDEO</a>':''}</div>
+      ${c.condicion? `<div style="font-size:13px;font-style:italic;color:var(--tinta2)">${esc(c.condicion)}</div>`:''}
+    </div>` +
+    (!filas.length ? '<div class="aviso">esa carrera no está en la base</div>' :
+    `<div class="scroll"><table>
+      <tr><th class="num">Llegó</th><th>Ejemplar</th><th>Cuerpos</th><th class="num">Kg</th><th>Jockey</th><th class="num">Perf</th><th class="num">P:$</th><th>Desarrollo</th></tr>` +
+    filas.map(p => `<tr>
+      <td class="num"><b class="${+p.posicion===1?'gana':''}">${esc(p.posicion||'—')}º</b></td>
+      <td>${linkCab(p.caballo, p.caballo_rp_id)}</td>
+      <td class="chico">${+p.posicion===1 ? 'GANÓ' : esc(p.dist_acum||'')}</td>
+      <td class="num">${p.kg? (+p.kg).toFixed(0):''}</td>
+      <td class="chico">${esc((p.jockey||'').split(',')[0])}</td>
+      <td class="num">${p.performance!=null? '<b>'+fnum(p.performance)+'</b>':''}</td>
+      <td class="num">${p.dividendo? (+p.dividendo).toFixed(2):''}</td>
+      <td class="chico">${p.desarrollo? esc(p.desarrollo):''}${p.incidencias? ' 🚩'+esc(p.incidencias):''}</td>
+    </tr>`).join('') + `</table></div>`) + `</div>`;
+}
+
+// ---------- CAMADAS ----------
+async function camada(){
+  const cam = document.getElementById('selCamada').value;
+  const cont = document.getElementById('tablaCamada');
+  cont.innerHTML = '<div class="aviso">Cargando…</div>';
+  const sx = document.getElementById('selSexo').value;
+  const [rs, est] = await Promise.all([
+    q(`turf_rating_maestro?camada=eq.${encodeURIComponent(cam)}${sx? '&sexo=eq.'+sx:''}&order=rating.desc&limit=100&select=caballo,caballo_rp_id,rating,corridas,sexo`),
+    q(`turf_camadas_estado?camada=eq.${encodeURIComponent(cam)}&select=puentes,puentes_mh`)
+  ]);
+  let info = '';
+  const e = est[0];
+  if (e){
+    const l1 = e.puentes === 0
+      ? '<b style="color:var(--rojo)">ISLA: todavía sin cruces con otras camadas</b> — estos ratings solo comparan entre compañeros de generación'
+      : e.puentes < 60
+      ? `recién soldada al resto de la escala (<b>${e.puentes}</b> carreras-puente — margen de 1-2 cuerpos vs los mayores)`
+      : `bien soldada a la escala general (<b>${e.puentes}</b> carreras-puente con otras camadas)`;
+    const l2 = e.puentes_mh === 0
+      ? '<b style="color:var(--rojo)">machos y hembras sin cruces</b>: no comparar entre sexos'
+      : e.puentes_mh < 15
+      ? `machos ↔ hembras: <b>${e.puentes_mh}</b> carreras mixtas (soldadura fina: comparar sexos con margen)`
+      : `machos ↔ hembras: <b>${e.puentes_mh}</b> carreras mixtas (comparables entre sí)`;
+    info = `<div class="jugada" style="border-color:var(--tinta);margin:0 0 12px"><h4 style="color:var(--tinta)">🔗 CONEXIONES DE ESTA CAMADA</h4>
+      <div style="font-size:14px">• ${l1}<br>• ${l2}</div></div>`;
+  }
+  let html = info + `<div class="panel"><div class="scroll"><table>
+    <tr><th>#</th><th>Ejemplar</th><th></th><th class="num">Rating (cpos)</th><th class="num">Corridas</th></tr>`;
+  rs.forEach((r,i)=>{ html += `<tr><td>${i+1}</td>
+    <td><span class="link" onclick="verCaballo('${esc(r.caballo).replace(/'/g,"\\'")}',false,${r.caballo_rp_id??'null'})">${esc(r.caballo)}</span></td>
+    <td class="dim">${r.sexo==='H'?'♀':r.sexo==='M'?'♂':''}</td>
+    <td class="num"><b>${fnum(r.rating)}</b></td><td class="num">${r.corridas}</td></tr>`; });
+  cont.innerHTML = html + '</table></div></div>';
+}
+
+document.getElementById('fecha').value = hoyISO();
+aplicarLetra();
+// llenar el selector de camadas con todas las que hay en la base
+q('turf_camadas_estado?select=camada&order=camada.desc').then(cs => {
+  const sel = document.getElementById('selCamada');
+  sel.innerHTML = cs.map((c,i) =>
+    `<option value="${esc(c.camada)}">Camada ${esc(c.camada)}${i===0?' (la nueva)':''}</option>`).join('');
+}).catch(()=>{});
+// LAS TABLAS HISTORICAS: fuerza de cada generacion + mejores performances de la historia
+Promise.all([
+  q('turf_camadas_historial?select=camada,fuerza_top10,campeon,rating_campeon&order=fuerza_top10.desc').catch(()=>[]),
+  q('turf_hitos_performances?select=caballo,caballo_rp_id,fecha,hipodromo,premio,distancia,performance,posicion&order=performance.desc&limit=30').catch(()=>[]),
+  q('turf_rating_maestro?corridas=gte.5&order=rating.desc&limit=50&select=caballo,caballo_rp_id,rating,corridas,camada').catch(()=>[]),
+  q('turf_picos?order=pico5.desc&limit=50&select=caballo,caballo_rp_id,pico5,corridas').catch(()=>[])
+]).then(([hist, tops, cracks, picos]) => {
+  if (!hist.length && !tops.length) return;
+  const box = document.getElementById('histCamadas');
+  let h = `<div class="panel" style="margin-top:14px">`;
+  if (cracks && cracks.length){
+    h += `<div style="font:bold 12px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;border-bottom:3px double var(--tinta);padding-bottom:5px;margin-bottom:6px">👑 LOS MEJORES CABALLOS DE LA HISTORIA <span class="chico" style="font-weight:normal">(rating = el promedio de TODA su campaña en la escala de 45 años · mín. 5 corridas)</span></div>
+      <div class="scroll"><table class="panorama" style="font-size:13px">
+      <tr><th>#</th><th>Caballo</th><th class="num">Rating</th><th class="num">Corridas</th><th>Camada</th></tr>` +
+      cracks.map((r,i)=>`<tr><td class="num">${i+1}</td>
+        <td style="cursor:pointer;color:var(--rojo)" onclick="verCaballo('${esc(r.caballo).replace(/'/g,"\\'")}',false,${r.caballo_rp_id??'null'})"><b>${esc(r.caballo)}</b></td>
+        <td class="num"><b>${fnum(+r.rating)}</b></td><td class="num">${r.corridas}</td>
+        <td>${esc(r.camada||'')}</td></tr>`).join('') + `</table></div>`;
+  }
+  if (picos && picos.length){
+    const ratMap = {};
+    (cracks||[]).forEach(r => ratMap[r.caballo] = +r.rating);
+    h += `<div style="font:bold 12px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;border-bottom:3px double var(--tinta);padding-bottom:5px;margin:14px 0 6px">🌋 LOS PICOS — QUÉ TAN ALTO TOCARON <span class="chico" style="font-weight:normal">(promedio de sus 5 MEJORES carreras, sin contar fracasos: el ranking del genio, no del constante)</span></div>
+      <div class="scroll"><table class="panorama" style="font-size:13px">
+      <tr><th>#</th><th>Caballo</th><th class="num">Pico 5</th><th class="num">Corridas</th></tr>` +
+      picos.map((r,i)=>`<tr><td class="num">${i+1}</td>
+        <td style="cursor:pointer;color:var(--rojo)" onclick="verCaballo('${esc(r.caballo).replace(/'/g,"\\'")}',false,${r.caballo_rp_id??'null'})"><b>${esc(r.caballo)}</b></td>
+        <td class="num"><b>${fnum(+r.pico5)}</b></td><td class="num">${r.corridas}</td></tr>`).join('') + `</table></div>`;
+  }
+  h += `
+    <div style="font:bold 12px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;border-bottom:3px double var(--tinta);padding-bottom:5px;margin:14px 0 6px">🏆 LA HISTORIA — FUERZA DE CADA GENERACIÓN <span class="chico" style="font-weight:normal">(promedio de sus 10 mejores, en cuerpos de la escala maestra)</span></div>
+    <div class="scroll"><table class="panorama" style="font-size:13px">
+    <tr><th>#</th><th>Camada</th><th class="num">Fuerza</th><th>Campeón</th><th class="num">Rating</th></tr>`;
+  hist.forEach((c, i) => {
+    h += `<tr><td class="num">${i+1}</td><td><b>${esc(c.camada)}</b></td>
+      <td class="num"><b>${fnum(+c.fuerza_top10)}</b></td>
+      <td style="cursor:pointer;color:var(--rojo)" onclick="verCaballo('${esc(c.campeon).replace(/'/g,"\\'")}',false,null)"><b>${esc(c.campeon)}</b></td>
+      <td class="num">${fnum(+c.rating_campeon)}</td></tr>`;
+  });
+  h += `</table></div>
+    <div style="font:bold 12px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;border-bottom:3px double var(--tinta);padding-bottom:5px;margin:14px 0 6px">⚡ LAS MEJORES PERFORMANCES DE LA HISTORIA <span class="chico" style="font-weight:normal">(el mejor día de un caballo en 45 años, nivel de la carrera − cuerpos)</span></div>
+    <div class="scroll"><table class="panorama" style="font-size:13px">
+    <tr><th>#</th><th>Caballo</th><th class="num">Perf</th><th>Fecha</th><th>Hip.</th><th>Premio</th><th class="num">Dist.</th><th>Llegó</th></tr>`;
+  tops.forEach((t, i) => {
+    h += `<tr><td class="num">${i+1}</td>
+      <td style="cursor:pointer;color:var(--rojo)" onclick="verCaballo('${esc(t.caballo).replace(/'/g,"\\'")}',false,${t.caballo_rp_id??'null'},'${t.fecha}')"><b>${esc(t.caballo)}</b></td>
+      <td class="num"><b>${fnum(+t.performance)}</b></td>
+      <td>${t.fecha.split('-').reverse().join('/')}</td><td>${esc(t.hipodromo)}</td>
+      <td class="chico">${esc(t.premio||'')}</td><td class="num">${t.distancia||''}</td>
+      <td>${esc(t.posicion||'?')}º</td></tr>`;
+  });
+  h += `</table></div></div>`;
+  box.innerHTML = h;
+}).catch(()=>{});
+cargarDia();
+</script>
+<div id="boletaBar"></div>
+<button id="boletaFab" onclick="bToggleVis()" title="abrir/cerrar la boleta">🎫</button>
+</body>
+</html>

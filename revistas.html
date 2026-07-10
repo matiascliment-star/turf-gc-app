@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revistas · Turf GC</title>
+<style>
+  :root { --papel:#f0e9d9; --papel2:#e9e1cd; --tinta:#181410; --tinta2:#4a4238;
+          --rojo:#a8231b; --oro:#8a6d1f; --filete:rgba(24,20,16,.4); --filete-suave:rgba(24,20,16,.18); }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--papel); color:var(--tinta); font-family:Georgia,'Times New Roman',serif;
+         font-size:16px; line-height:1.5;
+         background-image: radial-gradient(rgba(120,100,60,.06) 1px, transparent 1px);
+         background-size: 4px 4px; }
+  .hoja { max-width:720px; margin:0 auto; padding:14px 14px 44px; }
+  header { text-align:center; padding:10px 0 12px; border-bottom:4px double var(--tinta); }
+  .volver { display:inline-block; font:bold 13px 'Arial Narrow',Arial,sans-serif; letter-spacing:1px;
+    color:var(--tinta); text-decoration:none; border:2px solid var(--tinta); padding:4px 12px;
+    margin-bottom:12px; background:var(--papel2); }
+  header .marca { font-size:38px; font-weight:bold; letter-spacing:3px; }
+  header .marca span { color:var(--rojo); }
+  .lema { font-style:italic; color:var(--tinta2); font-size:14px; margin-top:6px; }
+  h2 { font:bold 20px 'Arial Narrow',Arial,sans-serif; text-transform:uppercase; letter-spacing:2px;
+       margin:26px 0 10px; padding-top:8px; border-top:3px solid var(--tinta); }
+  .grilla { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+  .ed { display:block; text-decoration:none; color:var(--tinta); background:var(--papel2);
+        border:1.5px solid var(--tinta); padding:10px 12px; text-align:center; }
+  .ed:hover { background:var(--tinta); color:var(--papel); }
+  .ed b { display:block; font-size:15px; }
+  .ed small { color:inherit; opacity:.7; font-size:11.5px; }
+  .aviso { font-style:italic; color:var(--tinta2); padding:8px 0; }
+</style>
+</head>
+<body>
+<div class="hoja">
+  <header>
+    <a class="volver" href="index.html">← VOLVER A LA TABULADA</a>
+    <div class="marca">REVISTAS <span>PALERMO</span></div>
+    <div class="lema">El archivo digital, en PDF — la blanca (semanal) y las diarias (el programa
+    de cada reunión, con los descargos de aprendices)</div>
+  </header>
+  <h2>La Blanca — semanal</h2>
+  <div class="grilla" id="gBlanca"><div class="aviso">cargando…</div></div>
+  <h2>Diarias — programas por reunión</h2>
+  <div class="grilla" id="gDiaria"><div class="aviso">cargando…</div></div>
+</div>
+<script>
+const SB = 'https://cqxqleesxgvuuyasmmyx.supabase.co';
+const KEY = 'sb_publishable_vbJdk0HcvpJBqw5TaQEQWg__dgq_Qt2';
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DIAS = ['dom','lun','mar','mié','jue','vie','sáb'];
+async function listar(prefix){
+  const r = await fetch(`${SB}/storage/v1/object/list/revistas`, {
+    method:'POST',
+    headers:{ apikey:KEY, Authorization:'Bearer '+KEY, 'Content-Type':'application/json' },
+    body: JSON.stringify({ prefix, limit:1000, sortBy:{column:'name', order:'desc'} })});
+  return r.ok ? r.json() : [];
+}
+function tarjeta(prefix, o){
+  const m = o.name.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const f = new Date(+m[1], +m[2]-1, +m[3]);
+  const mb = o.metadata && o.metadata.size ? ` · ${(o.metadata.size/1e6).toFixed(0)} MB` : '';
+  return `<a class="ed" href="${SB}/storage/v1/object/public/revistas/${prefix}/${o.name}" target="_blank">
+    <b>${+m[3]} ${MESES[+m[2]-1]} ${m[1]}</b><small>${DIAS[f.getDay()]}${mb}</small></a>`;
+}
+(async () => {
+  for (const [prefix, id] of [['blanca','gBlanca'], ['diaria','gDiaria']]){
+    const objs = (await listar(prefix)).filter(o => o.name.endsWith('.pdf'));
+    document.getElementById(id).innerHTML = objs.length
+      ? objs.map(o => tarjeta(prefix, o)).join('')
+      : '<div class="aviso">todavía no hay ediciones subidas — el archivo se está bajando, refrescá en un rato</div>';
+  }
+})();
+</script>
+</body>
+</html>
