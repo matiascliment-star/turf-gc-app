@@ -227,7 +227,9 @@ const ICONO = {REPETIDOR:'🎯', CICLICO:'🔁', ESCALADOR:'📈', SERRUCHO:'�
 let PADRES_DEBUT = null;
 async function getPadresDebut(){
   if (!PADRES_DEBUT){
-    try { PADRES_DEBUT = await (await fetch('padres_debut.json')).json(); }
+    try { PADRES_DEBUT = await (await fetch(SB.replace('/rest/v1/','') + '/storage/v1/object/public/revistas/datos/padres_debut.json')).json(); }
+    catch(e) { try { PADRES_DEBUT = await (await fetch('padres_debut.json')).json(); } catch(e2) {} }
+    if (false) try { PADRES_DEBUT = await (await fetch('padres_debut.json')).json(); }
     catch(e){ PADRES_DEBUT = {}; }
   }
   return PADRES_DEBUT;
