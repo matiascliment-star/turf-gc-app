@@ -787,6 +787,7 @@ async function linea(c, target){
                    repr365:[-6.2,-3.0,0.0], sobre:[-3.3,-1.2,0.7],
                    debut:[-5.7,-1.7,1.5]};  // vs media del lote: caja ancha de verdad
     const P60 = {frac10:4.5, frac6:2.8, vpostreb:4.0, bombareb:3.6, bomba10:2.7, debut:0.1};
+    const P40 = {sobre:-2.4, bombalim:-1.6, repr180:-3.0, repr365:-4.8, debut:-4.0};   // piso tipico: 6 de cada 10 no caen mas abajo
     const GOMA90 = {21: 8.2, 32: 10.0, 45: 12.8};   // p90 del hundido por nivel de 💣
     const gomaAlc = f => { const m = (f.razon||'').match(/goma: hundido .*?bomba (\d+)%/);
       return m ? GOMA90[+m[1]] || null : null; };
@@ -876,6 +877,7 @@ async function linea(c, target){
             ${cl>bHi(f)? `<div title="el estirón del rebote: hasta ${fnum(f.proy+cl)}" style="position:absolute;top:0;bottom:0;left:${pct(f.proy+bHi(f))}%;width:${pct(f.proy+cl)-pct(f.proy+bHi(f))}%;background:rgba(212,160,23,.15);border:1px dashed var(--oro)"></div>`:''}
             <div title="su día normal: ${fnum(f.proy+bLo(f))} a ${fnum(f.proy+bHi(f))}" style="position:absolute;top:0;bottom:0;left:${pct(f.proy+bLo(f))}%;width:${pct(f.proy+bHi(f))-pct(f.proy+bLo(f))}%;background:${serio?'rgba(212,160,23,.45)':puede?'rgba(212,160,23,.20)':'rgba(0,0,0,.12)'};border:1px solid ${puede?'var(--oro)':'#bbb'}"></div>
             <div title="su línea: ${fnum(f.proy)}" style="position:absolute;top:0;bottom:0;left:${pct(f.proy)}%;width:2px;background:var(--tinta);opacity:.7;z-index:2"></div><div title="su día más probable: ${fnum(f.proy+bMed(f))}" style="position:absolute;top:0;bottom:0;left:calc(${pct(f.proy+bMed(f))}% - 5px);display:flex;align-items:center;font-size:11px;color:#7a5c0e;z-index:4;text-shadow:0 0 2px #fff"><b>◆</b></div>
+            ${P40[f.pool]!=null? `<div title="6 de cada 10 no caen más abajo de ${fnum(f.proy+P40[f.pool])}" style="position:absolute;bottom:0;height:60%;left:${pct(f.proy+P40[f.pool])}%;width:2px;background:var(--rojo);opacity:.8;z-index:3"></div>`:''}
             ${esRebote(f)? `<div title="6 de cada 10 rebotes no pasan de ${fnum(f.proy+P60[f.pool])}" style="position:absolute;bottom:0;height:60%;left:${pct(f.proy+P60[f.pool])}%;width:2px;background:#7a5c0e;z-index:3"></div>`:''}
             <div style="position:absolute;top:0;bottom:0;left:${pct(piso)}%;width:2px;background:var(--rojo)"></div>
           </div></div>`;
@@ -927,7 +929,8 @@ async function linea(c, target){
               ${cl>bHi(f)? `<div title="el estirón del rebote: hasta ${fnum(f.proy+cl)}" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy+bHi(f))}%;width:${pc7(f.proy+cl)-pc7(f.proy+bHi(f))}%;background:rgba(120,60,200,.12);border:1px dashed #7a3cc8"></div>`:''}
               <div title="su día normal: ${fnum(f.proy+bLo(f))} a ${fnum(f.proy+bHi(f))}" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy+bLo(f))}%;width:${pc7(f.proy+bHi(f))-pc7(f.proy+bLo(f))}%;background:${serio?'rgba(120,60,200,.28)':puede?'rgba(120,60,200,.14)':'rgba(0,0,0,.10)'};border:1px solid ${puede?'#7a3cc8':'#bbb'}"></div>
               <div title="su línea: ${fnum(f.proy)}" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy)}%;width:2px;background:var(--tinta);opacity:.7;z-index:2"></div><div title="su día más probable: ${fnum(f.proy+bMed(f))}" style="position:absolute;top:0;bottom:0;left:calc(${pc7(f.proy+bMed(f))}% - 5px);display:flex;align-items:center;font-size:10px;color:#5a2d96;z-index:4;text-shadow:0 0 2px #fff"><b>◆</b></div>
-              ${esRebote(f)? `<div title="6 de cada 10 rebotes no pasan de ${fnum(f.proy+P60[f.pool])}" style="position:absolute;bottom:0;height:60%;left:${pc7(f.proy+P60[f.pool])}%;width:2px;background:#5a2d96;z-index:3"></div>`:''}
+              ${P40[f.pool]!=null? `<div title="6 de cada 10 no caen más abajo de ${fnum(f.proy+P40[f.pool])}" style="position:absolute;bottom:0;height:60%;left:${pc7(f.proy+P40[f.pool])}%;width:2px;background:var(--rojo);opacity:.8;z-index:3"></div>`:''}
+            ${esRebote(f)? `<div title="6 de cada 10 rebotes no pasan de ${fnum(f.proy+P60[f.pool])}" style="position:absolute;bottom:0;height:60%;left:${pc7(f.proy+P60[f.pool])}%;width:2px;background:#5a2d96;z-index:3"></div>`:''}
               <div style="position:absolute;top:0;bottom:0;left:${pc7(piso7)}%;width:2px;background:#7a3cc8"></div>
             </div></div>`;
         }
