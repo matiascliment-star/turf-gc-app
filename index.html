@@ -339,13 +339,14 @@ function bPush(){ const f = document.getElementById('fecha')?.value; if (!f) ret
 function bSel(nro, m){ return (BOLETA[nro]||[]).some(x => x.m === m); }
 function btnJ(nro, f){ const m = String(f.mandil ?? '?');
   const nom = (f.caballo||'').replace(/[\\'"<>]/g,'');
+  const pr = (f && f.prob != null) ? Math.round(100*f.prob) : 'null';
   const on = bSel(nro, m);
   return `<button class="btn-jugar${on?' on':''}" data-b="${nro}|${m}" `+
-    `onclick="bTog(event,${nro},'${m}','${nom}')" title="anotar en la boleta">${on?'✓':'+'}</button>`; }
-function bTog(ev, nro, m, nom){ ev.stopPropagation(); ev.preventDefault();
+    `onclick="bTog(event,${nro},'${m}','${nom}',${pr})" title="anotar en la boleta">${on?'✓':'+'}</button>`; }
+function bTog(ev, nro, m, nom, pr){ ev.stopPropagation(); ev.preventDefault();
   const arr = BOLETA[nro] = (BOLETA[nro]||[]);
   const i = arr.findIndex(x => x.m === m);
-  if (i >= 0) arr.splice(i, 1); else arr.push({m, n: nom});
+  if (i >= 0) arr.splice(i, 1); else arr.push({m, n: nom, p: (pr==null?undefined:pr)});
   if (!arr.length) delete BOLETA[nro];
   localStorage.setItem(bKey(), JSON.stringify(BOLETA)); bPush();
   document.querySelectorAll(`[data-b="${nro}|${m}"]`).forEach(b => {
@@ -382,7 +383,7 @@ function bBar(){ const el = document.getElementById('boletaBar');
     '<b style="letter-spacing:1px;font-family:\'Arial Narrow\',Arial,sans-serif">🎫 BOLETA</b>' +
     nros.map(n => `<span style="white-space:nowrap"><b>${n}ª:</b> ` +
       BOLETA[n].map(x => `<b style="border:1.5px solid var(--tinta);padding:0 5px;margin:0 1px;background:var(--papel2);cursor:pointer" title="${x.n} — tocar para sacar" onclick="bTog(event,${n},'${x.m}','${x.n}')">${x.m}</b>`).join('') +
-      ` <span class="chico" style="color:var(--tinta2)">${BOLETA[n].map(x=>x.n.split(' ')[0]).join('·')}</span></span>`).join('') +
+      ` <span class="chico" style="color:var(--tinta2)">${BOLETA[n].map(x=>x.n.split(' ')[0]).join('·')}</span>` + (() => { const ps = BOLETA[n].map(x=>x.p).filter(p=>p!=null); if (!ps.length) return '</span>'; const s = ps.reduce((a,b)=>a+b,0); const c = s>=73?'var(--verde)':s>=60?'var(--oro)':'var(--rojo)'; return ` <b style="color:${c}" title="suma Monte Carlo de tus elegidos (meta: 60 mitad / 73 dos de tres) — real ≈ ×0,9">Σ${s}%</b></span>`; })()).join('') +
     '<span style="flex:1"></span>' +
     '<button class="boton" style="padding:2px 10px" onclick="bCopiar(this)">copiar</button>' +
     btnOcultar +
