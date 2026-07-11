@@ -759,11 +759,17 @@ async function linea(c, target){
     }
     html += top.map(f =>
       `<div class="fila-j">${btnJ(c.nro,f)}<span class="mandil" style="border:1px solid var(--tinta)">${esc(f.mandil??'?')}</span><span class="pj">${nomTab(f)}</span>
-       <span>gana <b>${(f.prob*100).toFixed(0)}%</b>${f.pmarca!=null?` · marcador <b>${(f.pmarca*100).toFixed(0)}%</b>`:''}${f.ptranq!=null?` · esperable ${(f.ptranq*100).toFixed(0)}%`:''}${f.ptranq!=null&&f.prob>0.05?(f.ptranq<f.prob*0.85?' <i>→ gana el quilombo: necesita bombazo propio o derrumbe ajeno</i>':f.ptranq>f.prob*1.25?' <i>→ su fuerte es la carrera esperable</i>':''):''}</span>
+       <span><b title="EL MONTE CARLO: la carrera se simula 2.000 veces; este % = cuántas la gana" style="color:#8b6914">MC gana ${(f.prob*100).toFixed(0)}%</b>${f.pmarca!=null?` · marcador <b>${(f.pmarca*100).toFixed(0)}%</b>`:''}${f.ptranq!=null?` · esperable ${(f.ptranq*100).toFixed(0)}%`:''}${f.ptranq!=null&&f.prob>0.05?(f.ptranq<f.prob*0.85?' <i>→ gana el quilombo: necesita bombazo propio o derrumbe ajeno</i>':f.ptranq>f.prob*1.25?' <i>→ su fuerte es la carrera esperable</i>':''):''}</span>
        <span class="precio">jugable si el tablero paga +$${fnum(f.pmin,2)}</span>
        ${f.senal==='JOYA'?'<span class="etiqueta et-joya">🎯 Joya</span>':''}
        ${f.senal==='VALOR'?'<span class="etiqueta et-valor">💰 Tapado</span>':''}${goma(f)}${repr(f)}</div>
        ${f.razon?`<div class="chico" style="padding:0 0 6px 2px">${esc((f.razon||'').replace(/^gana [^.]+\.\s*/,''))}</div>`:''}`).join('');
+    // MONTE CARLO COMPLETO (pedido Matias 11/07): todos los caballos con su %
+    html += `<div class="chico" style="border-top:1px dotted var(--tinta2);margin-top:6px;padding-top:5px">
+      <b style="color:#8b6914" title="la carrera simulada 2.000 veces: cuántas gana cada uno">EL MONTE CARLO COMPLETO</b>
+      <span style="color:var(--tinta2)">(gana % — sumá hasta 60/73 con los +; la boleta te lleva la cuenta)</span><br>` +
+      conProb.map(f => `<span style="white-space:nowrap;margin-right:10px">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f)} <b>${(f.prob*100).toFixed(0)}%</b></span>`).join(' ') +
+      `</div>`;
     // el tapado (viene de fracaso grande) aunque no este en el top 3
     for (const f of conProb.slice(3))
       if (f.senal==='VALOR')
