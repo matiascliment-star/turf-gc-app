@@ -710,7 +710,8 @@ async function linea(c, target){
       return m >= 2 ? ' ' + m + 'm' : '';
     };
     const repr = f => !f.razon ? '' :
-      ((/POLLO REPRISADOR/.test(f.razon) ? ' <b style="color:var(--rojo)">🚩 POLLO reprisador' + mesesP(f.caballo) + ' (línea vieja y corta)</b>' :
+      ((/ÚLTIMA SIN TASAR/.test(f.razon) ? ' <b style="color:var(--rojo)" title="su última llegada real (30+ cpos o s.a.) quedó fuera de la escala: la línea no la ve, % optimista">⚠️ últ.SIN TASAR</b>' :
+        /POLLO REPRISADOR/.test(f.razon) ? ' <b style="color:var(--rojo)">🚩 POLLO reprisador' + mesesP(f.caballo) + ' (línea vieja y corta)</b>' :
         /REPRISA LARGA/.test(f.razon) ? ' <b style="color:var(--rojo)">⚠️ reprisa larga' + mesesP(f.caballo) + '</b>' :
         /⚠️ REPRISA/.test(f.razon) ? ' <b style="color:var(--rojo)">⚠️ reprisa' + mesesP(f.caballo) + '</b>' :
         /reprisa:|reprisado 60/.test(f.razon) ? ' ⚠ reprisa' + mesesP(f.caballo) : '') +
