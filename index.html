@@ -772,6 +772,40 @@ async function linea(c, target){
       <span style="color:var(--tinta2)">(gana % — sumá hasta 60/73 con los +; la boleta te lleva la cuenta)</span><br>` +
       conProb.map(f => `<span style="white-space:nowrap;margin-right:10px">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f)} <b>${(f.prob*100).toFixed(0)}%</b></span>`).join(' ') +
       `</div>`;
+    // LA REGLA DEL CLAVO (13/07/26, metodo de Matias validado en 31.500
+    // carreras 2019-26): clavo = mejor ◆ SIN deuda; vara = su peor dia comun
+    // (p33 de su caja); pasan los que llegan con su dia bueno (p67). El conteo
+    // es termometro: 1->48% banca seca / 2->61 / 3->71 / 4->80 / 5+ loteria.
+    // Banca del dia (duelo 13/07): favorito MC 55%+ gana 54% real.
+    const CAJA = {vet:[-1.4,0.6,2.5], n23:[-1.7,0.5,2.7], n1:[-1.6,1.0,3.7],
+                  frac10:[0.1,3.0,5.6], frac6:[-1.1,1.4,3.8], frac6fav:[-1.5,0.8,3.0],
+                  bombalim:[-2.7,-0.1,2.4], bombareb:[-0.3,2.2,4.5], vpostreb:[0.2,2.7,4.9],
+                  bomba10:[-1.6,1.1,3.6], repr:[-3.3,-0.7,1.7], repr60:[-2.7,-0.3,1.9],
+                  repr180:[-4.2,-1.4,1.1], repr365:[-6.2,-3.0,0.0], sobre:[-3.4,-1.4,0.5],
+                  sobrenov:[-2.4,-0.2,1.7], debut:[-5.7,-1.7,1.5]};   // copia de BANDA (p33/p50/p67)
+    const poolsDeuda = new Set(['sobre','sobrenov','bombalim','repr180','repr365']);
+    const cCaja = f => CAJA[f.pool] || CAJA.vet;
+    const sanosC = conProb.filter(f => f.proy!=null && !poolsDeuda.has(f.pool));
+    if (sanosC.length){
+      const clavo = sanosC.reduce((a,b)=> (a.proy+cCaja(a)[1] >= b.proy+cCaja(b)[1] ? a : b));
+      const varaC = clavo.proy + cCaja(clavo)[0];
+      const pasanC = conProb.filter(f => f.proy!=null && f.proy + cCaja(f)[2] >= varaC)
+                            .sort((a,b)=>(b.prob??0)-(a.prob??0));
+      const term = pasanC.length===1 ? 'BANCA SECA — él solo gana el 48%'
+        : pasanC.length===2 ? 'jugada corta: 61% entre los dos'
+        : pasanC.length===3 ? 'jugada de 3: 71%'
+        : pasanC.length===4 ? 'el pick clásico: 80%'
+        : 'la propia vara declara LOTERÍA: cubrí sabiéndolo o pasá';
+      const fav1 = conProb[0];
+      const banca = (fav1.prob>=0.55)
+        ? `<br><b style="color:#1a6e1a" title="duelo medido 13/07/26: cuando el favorito del MC promete 55%+, cumple — gana 54% real (1 de cada 10 carreras)">🔒 LA BANCA DEL DÍA:</b> (${esc(fav1.mandil??'?')}) ${nomTab(fav1)} promete ${(fav1.prob*100).toFixed(0)}% — a este nivel el motor cumple (54% medido). Banca seca.` : '';
+      html += `<div class="chico" style="border-top:1px dotted var(--tinta2);margin-top:6px;padding-top:5px">
+        <b style="color:#7a3c00" title="método de la casa (31.500 carreras 2019-26): el clavo es el mejor ◆ sin deuda; su peor día común es la vara; pasan los que llegan con el borde bueno de su caja">🔨 LA REGLA DEL CLAVO</b>
+        <span style="color:var(--tinta2)">clavo: (${esc(clavo.mandil??'?')}) ${nomTab(clavo)} · vara ${fnum(varaC)} (su peor día común)</span><br>
+        la pasan ${pasanC.length}: ` +
+        pasanC.map(f=>`<span style="white-space:nowrap;margin-right:9px">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f)} <span style="color:var(--tinta2)">bueno ${fnum(f.proy+cCaja(f)[2])}</span></span>`).join(' ') +
+        ` — <b>${term}</b>${banca}</div>`;
+    }
     // el tapado (viene de fracaso grande) aunque no este en el top 3
     for (const f of conProb.slice(3))
       if (f.senal==='VALOR')
