@@ -697,7 +697,8 @@ async function linea(c, target){
       const m = (f.razon||'').match(/goma: .+? bomba (\d+)% \/ fracaso (\d+)%/);
       if (!m) return '';
       const b = +m[1], fr = +m[2];
-      if (b >= 20) return ` <b style="color:#2a7">💣${b}%</b>`;      // resorte comprimido
+      const h = (f.razon||'').match(/goma: hundido (7\+|[\d.,]+)/);
+      if (b >= 20) return ` <b style="color:#2a7">💣${b}% goma−${h?h[1].replace('+',''):'?'}</b>`;      // resorte comprimido: cuanto + chance
       if (fr >= 17) return ` <b style="color:#a00">⚠${fr}%</b>`;     // brillo-deuda
       return '';
     };
