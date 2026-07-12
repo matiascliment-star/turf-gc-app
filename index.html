@@ -799,7 +799,7 @@ async function linea(c, target){
     const GOMA90 = {21: 8.2, 32: 10.0, 45: 12.8};   // p90 del hundido por nivel de 💣
     const gomaAlc = f => { const m = (f.razon||'').match(/goma: hundido .*?bomba (\d+)%/);
       return m ? GOMA90[+m[1]] || null : null; };
-    const MALA = {sobre:-8.2, sobrenov:-7.4, bombalim:-8.4, repr180:-10.5, repr365:-13.3, debut:-13.2};   // p10 de los estados cargados a fracasar   // p60: lo que el 60% de los rebotes no pasa
+    const MALA = {sobre:-8.2, bombalim:-8.4, repr180:-10.5, repr365:-13.3, debut:-13.2};   // p10 de los estados cargados a fracasar   // p60: lo que el 60% de los rebotes no pasa
     // EL LADO (08/07/26, pedido Matias): de cada 100 caballos en ese estado,
     // cuantos corren ARRIBA de su linea (+1 o mas) y cuantos ABAJO (-1 o menos).
     // Medido de los dados reales (deltas_pools.json). Flecha solo si esta cargado.
