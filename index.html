@@ -769,8 +769,8 @@ async function linea(c, target){
     // MONTE CARLO COMPLETO (pedido Matias 11/07): todos los caballos con su %
     html += `<div class="chico" style="border-top:1px dotted var(--tinta2);margin-top:6px;padding-top:5px">
       <b style="color:#8b6914" title="la carrera simulada 2.000 veces: cuántas gana cada uno">EL MONTE CARLO COMPLETO</b>
-      <span style="color:var(--tinta2)">(gana % — sumá hasta 60/73 con los +; la boleta te lleva la cuenta)</span><br>` +
-      conProb.map(f => `<span style="white-space:nowrap;margin-right:10px">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f)} <b>${(f.prob*100).toFixed(0)}%</b></span>`).join(' ') +
+      <span style="color:var(--tinta2)" title="regla θ (13/07/26): entra el que supera su precio solo — verde 14,5%+ = jugada corta (60% con ~2) · negrita 8,5%+ = jugada estándar (78% con ~4) · la suma ×0,9 sigue siendo tu cobertura real">(gana % — REGLA θ: <b style="color:#1a6e1a">verde 14,5%+</b> jugada corta · <b>negrita 8,5%+</b> jugada estándar 78%)</span><br>` +
+      conProb.map(f => `<span style="white-space:nowrap;margin-right:10px;${f.prob>=0.145?'color:#1a6e1a;font-weight:bold':f.prob>=0.085?'font-weight:bold':'color:var(--tinta2)'}">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f)} <b>${(f.prob*100).toFixed(0)}%</b></span>`).join(' ') +
       `</div>`;
     // LA REGLA DEL CLAVO (13/07/26, metodo de Matias validado en 31.500
     // carreras 2019-26): clavo = mejor ◆ SIN deuda; vara = su peor dia comun
