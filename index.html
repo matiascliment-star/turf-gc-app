@@ -715,7 +715,7 @@ async function linea(c, target){
         /REPRISA LARGA/.test(f.razon) ? ' <b style="color:var(--rojo)">⚠️ reprisa larga' + mesesP(f.caballo) + '</b>' :
         /⚠️ REPRISA/.test(f.razon) ? ' <b style="color:var(--rojo)">⚠️ reprisa' + mesesP(f.caballo) + '</b>' :
         /reprisa:|reprisado 60/.test(f.razon) ? ' ⚠ reprisa' + mesesP(f.caballo) : '') +
-       (/SOBRE su historia/.test(f.razon) ? (goma(f)?'':' <b style="color:#a00">⚠17%</b>') + ' <b style="color:#a00">▼deuda</b>' : '') +
+       (/vida CORTA/.test(f.razon) ? ' <b style="color:#a06000" title="brilla sobre una vida corta (5 corridas o menos): la deuda del pichón es la mitad — devuelve ~0,7 y 1 de cada 12 mete bomba (motor v2.7, ojo de Matías con XI)">▼deuda suave</b>' : /SOBRE su historia/.test(f.razon) ? (goma(f)?'':' <b style="color:#a00">⚠17%</b>') + ' <b style="color:#a00">▼deuda</b>' : '') +
        (/punto justo|3ª de la serie/.test(f.razon) ? ' <b style="color:#2a7">★3ª</b>' : ''));
     html += `<div class="jugada"><h4>La jugada</h4>`;
     if (conProb.some(f => f.pool === 'debut'))
@@ -735,7 +735,7 @@ async function linea(c, target){
       // avance [promedio (p75), buen dia (p90)] POR ESTADO, pools v2.4 07/07/26:
       // el deudor y el reprisado avanzan MENOS que el comun (antes caian en 2,6)
       const AV = {frac10:[6.5,10.3], frac6:[4.1,7], frac6fav:[3,7.1], vpostreb:[6,9],
-                  bomba10:[5,8.4], sobre:[1.7,4.3], repr:[2.9,6.3], n1:[5.3,9.6], n23:[3.9,7.2]};
+                  bomba10:[5,8.4], sobre:[1.4,4.0], sobrenov:[2.8,5.6], repr:[2.9,6.3], n1:[5.3,9.6], n23:[3.9,7.2]};
       const avz = f => AV[f.pool] || [2.6,4];
       // orden por LINEA (como se lee el programa); el % queda como peso de cada uno
       const tierA = conLinea.filter(f=>mejor-f.proy < 2.6+avz(f)[0]).sort((a,b)=>b.proy-a.proy);
@@ -747,7 +747,7 @@ async function linea(c, target){
         const abierta = tierA.length >= 6 ? '<b style="color:var(--rojo)">CARRERA ABIERTA</b> — ' : '';
         const pt = (proCab && Object.values(proCab)[0] && Object.values(proCab)[0].p_tranquila!=null) ? +Object.values(proCab)[0].p_tranquila : null;
         html += `<div class="chico" style="padding:2px 2px 6px">${abierta}<b style="color:var(--rojo)">SI LA GANA UNO HACIENDO LO ESPERABLE${pt!=null?` (pasa ${(pt*100).toFixed(0)} de cada 100 carreras)`:''}:</b><br>
-          <b>Con movimientos promedio</b> (uno afloja 2,6 y otro avanza su promedio POR ESTADO: 2,6 el común · ~6,5 el rebotador · pero el brilloso en deuda solo 1,7 y el reprisado 2,9) <b>la ganan ${tierA.length}</b>: `
+          <b>Con movimientos promedio</b> (uno afloja 2,6 y otro avanza su promedio POR ESTADO: 2,6 el común · ~6,5 el rebotador · pero el brilloso en deuda solo 1,4 (el pichón brilloso 2,8) y el reprisado 2,9) <b>la ganan ${tierA.length}</b>: `
           + tierA.map(etiq).join(' — ')
           + (tierB.length ? `<br><b>Estirando a un buen día</b> (uno afloja 4 y otro mete su tope común: 4 el normal, ~10 el rebotador): se suman ` + tierB.map(f=>etiq(f,1)).join(' — ') : '');
         const resto = conLinea.filter(f=>!tierA.includes(f) && !tierB.includes(f))
@@ -792,20 +792,20 @@ async function linea(c, target){
                    bombalim:[-2.7,-0.1,2.4], bombareb:[-0.3,2.2,4.5],
                    vpostreb:[0.2,2.7,4.9],
                    bomba10:[-1.6,1.1,3.6], repr:[-3.3,-0.7,1.7], repr60:[-2.7,-0.3,1.9], repr180:[-4.2,-1.4,1.1],
-                   repr365:[-6.2,-3.0,0.0], sobre:[-3.3,-1.2,0.7],
+                   repr365:[-6.2,-3.0,0.0], sobre:[-3.4,-1.4,0.5], sobrenov:[-2.4,-0.2,1.7],
                    debut:[-5.7,-1.7,1.5]};  // vs media del lote: caja ancha de verdad
     const P60 = {frac10:4.5, frac6:2.8, vpostreb:4.0, bombareb:3.6, bomba10:2.7, debut:0.1};
-    const P40 = {sobre:-2.4, bombalim:-1.6, repr180:-3.0, repr365:-4.8, debut:-4.0};   // piso tipico: 6 de cada 10 no caen mas abajo
+    const P40 = {sobre:-2.5, sobrenov:-1.4, bombalim:-1.6, repr180:-3.0, repr365:-4.8, debut:-4.0};   // piso tipico: 6 de cada 10 no caen mas abajo
     const GOMA90 = {21: 8.2, 32: 10.0, 45: 12.8};   // p90 del hundido por nivel de 💣
     const gomaAlc = f => { const m = (f.razon||'').match(/goma: hundido .*?bomba (\d+)%/);
       return m ? GOMA90[+m[1]] || null : null; };
-    const MALA = {sobre:-8.1, bombalim:-8.4, repr180:-10.5, repr365:-13.3, debut:-13.2};   // p10 de los estados cargados a fracasar   // p60: lo que el 60% de los rebotes no pasa
+    const MALA = {sobre:-8.2, sobrenov:-7.4, bombalim:-8.4, repr180:-10.5, repr365:-13.3, debut:-13.2};   // p10 de los estados cargados a fracasar   // p60: lo que el 60% de los rebotes no pasa
     // EL LADO (08/07/26, pedido Matias): de cada 100 caballos en ese estado,
     // cuantos corren ARRIBA de su linea (+1 o mas) y cuantos ABAJO (-1 o menos).
     // Medido de los dados reales (deltas_pools.json). Flecha solo si esta cargado.
     const LADO = {vet:[46,36], n23:[46,38], n1:[49,36], frac10:[62,27], frac6:[53,33],
                   frac6fav:[49,36], vpostreb:[62,26], bomba10:[50,37], repr:[38,47],
-                  sobre:[30,52], debut:[35,54],
+                  sobre:[29,54], sobrenov:[39,44], debut:[35,54],
                   repr60:[40,45], repr180:[33,53], repr365:[27,61],
                   bombalim:[42,44], bombareb:[58,29]};
     const apz = f => { const m = (f.razon||'').match(/aprendiz[^:]*: descarga (\d(?:[.,]5)?)/);
@@ -963,7 +963,7 @@ async function linea(c, target){
         const realCab = {}; for (const r of reales) realCab[(r.caballo||'').toUpperCase().trim()] = r;
         const RB = {vet:0.6, n23:0.5, n1:1.0, frac10:3.0, frac6:1.4, frac6fav:0.8,
                     vpostreb:2.7, bomba10:1.1, bombalim:-0.1, bombareb:2.2, repr:-0.7, repr60:-0.3, repr180:-1.4,
-                    repr365:-3.0, sobre:-1.2, debut:-1.7};
+                    repr365:-3.0, sobre:-1.4, sobrenov:-0.2, debut:-1.7};
         const porProb = [...pros].sort((a,b)=>(+b.prob)-(+a.prob));
         const posNum = p => { const r = realCab[(p.caballo||'').toUpperCase().trim()];
           if (!r) return 99; const n = parseInt(r.posicion); return isNaN(n) ? 98 : n; };
