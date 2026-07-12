@@ -715,7 +715,7 @@ async function linea(c, target){
         /REPRISA LARGA/.test(f.razon) ? ' <b style="color:var(--rojo)">⚠️ reprisa larga' + mesesP(f.caballo) + '</b>' :
         /⚠️ REPRISA/.test(f.razon) ? ' <b style="color:var(--rojo)">⚠️ reprisa' + mesesP(f.caballo) + '</b>' :
         /reprisa:|reprisado 60/.test(f.razon) ? ' ⚠ reprisa' + mesesP(f.caballo) : '') +
-       (/vida CORTA/.test(f.razon) ? ' <b style="color:#a06000" title="brilla sobre una vida corta (5 corridas o menos): la deuda del pichón es la mitad — devuelve ~0,7 y 1 de cada 12 mete bomba (motor v2.7, ojo de Matías con XI)">▼deuda suave</b>' : /SOBRE su historia/.test(f.razon) ? (goma(f)?'':' <b style="color:#a00">⚠17%</b>') + ' <b style="color:#a00">▼deuda</b>' : '') +
+       (/vida CORTA/.test(f.razon) ? ' <b style="color:#a06000" title="brilla sobre una vida corta (5 corridas o menos): la deuda del pichón es la mitad — devuelve ~0,7 y 1 de cada 12 mete bomba (motor v2.7, ojo de Matías con XI)">▼deuda suave</b>' : /SOBRE su historia/.test(f.razon) ? (goma(f)?'':' <b style="color:#a00">⚠17%</b>') + ' <b style="color:#a00" title="NO hizo bomba: viene corriendo ARRIBA del promedio de toda su vida (goma estirada) — no le esperes otro salto; el ◆ ya trae la devolución">▼deuda' + (((f.razon||'').match(/brilla \+?(\d+) vs su vida/)||[])[1] ? ' goma+' + (f.razon.match(/brilla \+?(\d+) vs su vida/))[1] : '') + '</b>' : '') +
        (/punto justo|3ª de la serie/.test(f.razon) ? ' <b style="color:#2a7">★3ª</b>' : ''));
     html += `<div class="jugada"><h4>La jugada</h4>`;
     if (conProb.some(f => f.pool === 'debut'))
