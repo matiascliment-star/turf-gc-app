@@ -444,15 +444,30 @@ async function cargarDia(){
       }
       // COMBINADAS: doble/triplo/pick4/5y6 que arrancan en cada carrera,
       // armadas con los candidatos del modelo (dominada=pick solo, abierta=2-3)
+      // patas por DOCTRINA (13/07/26, pedido Matias): 🔒 clava 1 · 🎯 corta
+      // 2 · ⚖ 3 · 🎲 se abre a 4; series con DOS caoticas se marcan EVITAR;
+      // ranking por JUGO = pozo x chance / costo (el subsidio del garantizado)
+      const docDe = lote => {
+        const fav = lote[0];
+        const ptc = fav.p_tranquila!=null ? +fav.p_tranquila : null;
+        if (+fav.prob >= 0.50) return 'B';
+        if (ptc!=null && ptc < 0.4) return 'C';
+        if (ptc!=null && ptc >= 0.6) return 'F';
+        return 'N';
+      };
+      const DOCI = {B:'🔒', F:'🎯', N:'⚖', C:'🎲'};
       const armarLeg = lote => {
         if (!lote || !lote.length) return null;
-        if (+lote[0].prob >= 0.5) return [lote[0]];
+        const d = docDe(lote);
+        if (d === 'B') return {sel:[lote[0]], d};
+        const tope = d==='F' ? (+lote[0].prob>=0.35?2:3) : d==='C' ? 4 : 3;
+        const meta = d==='C' ? 0.62 : 0.72;
         const sel = []; let acc = 0;
-        for (const p of lote){ sel.push(p); acc += +p.prob; if (acc >= 0.7 || sel.length >= 3) break; }
-        return sel;
+        for (const p of lote){ sel.push(p); acc += +p.prob; if (acc >= meta || sel.length >= tope) break; }
+        return {sel, d};
       };
       const plata = s => (+String(s).replace(/\./g,'')).toLocaleString('es-AR');
-      let filasC = '';
+      const combis = [];
       for (const c of carreras){
         const ta = (c.apuestas||'').toUpperCase();
         const ic = ta.indexOf('COMIENZA');
@@ -463,26 +478,34 @@ async function cargarDia(){
           const lotes = [];
           for (let k = 0; k < legs; k++) lotes.push(porC[c.hipodromo+'|'+(c.nro+k)]);
           if (lotes.some(l=>!l)) continue;
-          const sels = lotes.map(armarLeg);
-          const boletos = sels.reduce((a,s)=>a*s.length, 1);
-          const chance = sels.reduce((a,s)=>a*s.reduce((x,p)=>x+ +p.prob, 0), 1);
+          const armas = lotes.map(armarLeg);
+          const boletos = armas.reduce((a,s)=>a*s.sel.length, 1);
+          const chance = armas.reduce((a,s)=>a*s.sel.reduce((x,p)=>x+ +p.prob, 0), 1);
+          const nCao = armas.filter(s=>s.d==='C').length;
           const mPrecio = tc.match(new RegExp(tipo.replace(/ /g,'\\s') + "[^$]*\\$\\s?([\\d\\.]+)"));
           const precio = mPrecio ? +mPrecio[1].replace(/\./g,'') : null;
           const mPozo = tc.match(/POZO GARANTIZADO[^$]*\$\s?([\d\.]+)/);
-          filasC += `<div class="chico" style="padding:2px 0">
-            <b>${tipo} ${c.nro}ª a ${c.nro+legs-1}ª</b>${mPozo?` (pozo gar. $${plata(mPozo[1])})`:''}: `
-            + sels.map((s,k)=>`${c.nro+k}ª [${s.map(p=>esc(p.mandil??'?')).join('-')}]`).join(' × ')
-            + ` = <b>${boletos} boleto${boletos>1?'s':''}</b>${precio?` → $${(boletos*precio).toLocaleString('es-AR')}`:''}`
-            + ` · chance ~${(chance*100).toFixed(0)}%${tipo==='5 Y 6'?' <i>(pagan también 5 aciertos)</i>':''}</div>`;
+          const pozo = mPozo ? +mPozo[1].replace(/\./g,'') : null;
+          const costo = precio ? boletos*precio : null;
+          const jugo = (pozo && costo) ? pozo*chance/costo : null;
+          const fuego = jugo==null ? '' : jugo>=50 ? ' 🔥🔥🔥' : jugo>=20 ? ' 🔥🔥' : jugo>=8 ? ' 🔥' : '';
+          const veto = nCao >= 2;
+          combis.push({jugo: veto ? -1 : (jugo ?? 0), html: `<div class="chico" style="padding:2px 0${veto?';opacity:.55':''}">
+            ${veto?'<b style="color:var(--rojo)">✗ EVITAR (dos 🎲)</b> ':''}<b>${tipo} ${c.nro}ª a ${c.nro+legs-1}ª</b>${pozo?` (pozo gar. $${plata(mPozo[1])})`:''}${fuego}: `
+            + armas.map((s,k)=>`${c.nro+k}ª${DOCI[s.d]}${s.d==='B'?'<b style="color:#1a6e1a">CLAVO</b>':''}[${s.sel.map(p=>esc(p.mandil??'?')).join('-')}]`).join(' × ')
+            + ` = <b>${boletos} boleto${boletos>1?'s':''}</b>${costo?` → $${costo.toLocaleString('es-AR')}`:''}`
+            + ` · chance ~${(chance*100).toFixed(0)}%${tipo==='5 Y 6'?' <i>(pagan también 5 aciertos)</i>':''}</div>`});
         }
       }
+      combis.sort((a,b)=>b.jugo-a.jugo);
+      let filasC = combis.map(x=>x.html).join('');
       if (filasJ){
         const box = document.createElement('div');
         box.className = 'jugada';
         box.style.margin = '0 12px 12px';
         box.innerHTML = `<h4>Jugadas del día</h4>${filasJ}`
           + (filasC ? `<div style="border-top:1px dotted var(--rojo);margin-top:4px;padding-top:4px">
-            <div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2);padding-bottom:2px">COMBINADAS — ARMADO DEL MODELO <span class="chico" style="font-weight:normal">(carrera dominada = pick solo; abierta = 2-3 candidatos)</span></div>${filasC}</div>` : '')
+            <div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2);padding-bottom:2px">COMBINADAS — ARMADO DEL MODELO <span class="chico" style="font-weight:normal">(patas por doctrina: 🔒 clava · 🎯 2 · ⚖ 3 · 🎲 4 — orden por JUGO del pozo garantizado; con dos 🎲 se evita)</span></div>${filasC}</div>` : '')
           + `<div class="chico" style="border-top:1px dotted var(--rojo);margin-top:4px;padding-top:4px">
           <b>REGLAS:</b> a ganador, una sola apuesta posible por carrera (el pick), y SOLO si el tablero paga su mínimo — si no llega, esa carrera se mira, no se juega. Pick pagando <b>$8 o más = jugada estrella</b> (+25% histórico). Las combinadas son armado sugerido: la chance es la matemática del modelo, el pozo decide si conviene. Tocá una fila para ir a la carrera.</div>`;
         cont.appendChild(box);
