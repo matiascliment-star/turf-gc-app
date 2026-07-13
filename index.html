@@ -429,7 +429,7 @@ async function cargarDia(){
         const badge = +pick.prob>=0.50
           ? '<span title="BLINDADA: bancalo solo" style="color:#1a6e1a;font-weight:bold">🔒1</span>'
           : (ptc!=null && ptc<0.4)
-          ? '<span title="CAÓTICA: pasala o cubrila sabiendo que es moneda" style="color:var(--rojo);font-weight:bold">🎲</span>'
+          ? `<span title="CAÓTICA: pasala o cubrila sabiendo que es moneda" style="color:var(--rojo);font-weight:bold">🎲${nTh||''}</span>`
           : (ptc!=null && ptc>=0.6)
           ? `<span title="FIRME: lo esperado manda — jugada corta" style="color:#1a6e1a;font-weight:bold">🎯${Math.min(nTh,3)}</span>`
           : `<span title="NORMAL: los de precio 8,5%+" style="font-weight:bold">⚖${nTh||''}</span>`;
@@ -711,7 +711,7 @@ async function linea(c, target){
       if (fav.prob >= 0.50)
         doc = `<b style="color:#1a6e1a">🔒 BLINDADA</b> — <b>1 boleto</b>: bancá al (${esc(fav.mandil??'?')}) ${nomTab(fav)} solo — gana ${(fav.prob*100).toFixed(0)} de cada 100`;
       else if (ptc!=null && ptc < 0.4)
-        doc = `<b style="color:var(--rojo)">🎲 CAÓTICA</b> (esperable ${(ptc*100).toFixed(0)}%) — acá el favorito acierta 24 de cada 100: <b>pasala</b>, o cubrila ancha sabiendo que es moneda`;
+        doc = `<b style="color:var(--rojo)">🎲 CAÓTICA</b> (esperable ${(ptc*100).toFixed(0)}%) — acá el favorito acierta 24 de cada 100: <b>pasala</b>, o cubrila ancha (pagan el precio ${enTheta}, suman ${suma(9)}) sabiendo que es moneda`;
       else if (ptc!=null && ptc >= 0.6)
         doc = `<b style="color:#1a6e1a">🎯 FIRME</b> (la gana uno esperable ${(ptc*100).toFixed(0)}%) — puede ser pareja igual, pero PREVISIBLE: <b>jugada corta de ${Math.min(enTheta,3)||2}</b> — juntos suman ${suma(3)} de cada 100`;
       else
