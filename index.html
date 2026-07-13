@@ -710,6 +710,10 @@ async function linea(c, target){
       const m = Math.round((new Date(c.fecha) - new Date(uf)) / 2592e6);
       return m >= 2 ? ' ' + m + 'm' : '';
     };
+    const gat = f => { const m = (f.razon||'').match(/🚪 ([+-][\d.,]+)/);
+      return m ? ` <b style="color:${m[1].startsWith('-')?'#a00':'#2a7'}" title="el peaje de gatera (motor v2.8): su cajón en esta cancha/pista/distancia — YA descontado en el %">🚪${m[1]}</b>` : ''; };
+    const jok = f => { const m = (f.razon||'').match(/🏇 ([+-][\d.,]+)/);
+      return m ? ` <b style="color:${m[1].startsWith('-')?'#a00':'#2a7'}" title="el aviso del cuidador (motor v2.9): le cambiaron el jockey — YA descontado en el %">🏇${m[1]}</b>` : ''; };
     const repr = f => !f.razon ? '' :
       ((/ÚLTIMA SIN TASAR/.test(f.razon) ? ' <b style="color:var(--rojo)" title="su última llegada real (30+ cpos o s.a.) quedó fuera de la escala: la línea no la ve, % optimista">⚠️ últ.SIN TASAR</b>' :
         /POLLO REPRISADOR/.test(f.razon) ? ' <b style="color:var(--rojo)">🚩 POLLO reprisador' + mesesP(f.caballo) + ' (línea vieja y corta)</b>' :
@@ -732,7 +736,7 @@ async function linea(c, target){
       // (el que viene de fracaso llega desde mas lejos: su rebote alcanza p90)
       const orden = f => f.ptranq ?? f.prob ?? 0;
       const etiq = f => { const g = mejor-f.proy;
-        return `(${esc(f.mandil??'?')}) ${nomTab(f)}${g<0.05?' puntero':' a '+fnum(g)}${(f.pool==='frac10'||f.pool==='frac6'||f.pool==='vpostreb')&&g>=5.2?' <b>por rebote</b>':''}${goma(f)}${repr(f)}${f.ptranq!=null?' · '+(f.ptranq*100).toFixed(0)+'%':''}`; };
+        return `(${esc(f.mandil??'?')}) ${nomTab(f)}${g<0.05?' puntero':' a '+fnum(g)}${(f.pool==='frac10'||f.pool==='frac6'||f.pool==='vpostreb')&&g>=5.2?' <b>por rebote</b>':''}${goma(f)}${repr(f)}${gat(f)}${jok(f)}${f.ptranq!=null?' · '+(f.ptranq*100).toFixed(0)+'%':''}`; };
       // avance [promedio (p75), buen dia (p90)] POR ESTADO, pools v2.4 07/07/26:
       // el deudor y el reprisado avanzan MENOS que el comun (antes caian en 2,6)
       const AV = {frac10:[6.5,10.3], frac6:[4.1,7], frac6fav:[3,7.1], vpostreb:[6,9],
@@ -764,7 +768,7 @@ async function linea(c, target){
        <span><b title="EL MONTE CARLO: la carrera se simula 2.000 veces; este % = cuántas la gana" style="color:#8b6914">MC gana ${(f.prob*100).toFixed(0)}%</b>${f.pmarca!=null?` · marcador <b>${(f.pmarca*100).toFixed(0)}%</b>`:''}${f.ptranq!=null?` · esperable ${(f.ptranq*100).toFixed(0)}%`:''}${f.ptranq!=null&&f.prob>0.05?(f.ptranq<f.prob*0.85?' <i>→ gana el quilombo: necesita bombazo propio o derrumbe ajeno</i>':f.ptranq>f.prob*1.25?' <i>→ su fuerte es la carrera esperable</i>':''):''}</span>
        <span class="precio">jugable si el tablero paga +$${fnum(f.pmin,2)}</span>
        ${f.senal==='JOYA'?'<span class="etiqueta et-joya">🎯 Joya</span>':''}
-       ${f.senal==='VALOR'?'<span class="etiqueta et-valor">💰 Tapado</span>':''}${goma(f)}${repr(f)}</div>
+       ${f.senal==='VALOR'?'<span class="etiqueta et-valor">💰 Tapado</span>':''}${goma(f)}${repr(f)}${gat(f)}${jok(f)}</div>
        ${f.razon?`<div class="chico" style="padding:0 0 6px 2px">${esc((f.razon||'').replace(/^gana [^.]+\.\s*/,''))}</div>`:''}`).join('');
     // MONTE CARLO COMPLETO (pedido Matias 11/07): todos los caballos con su %
     html += `<div class="chico" style="border-top:1px dotted var(--tinta2);margin-top:6px;padding-top:5px">
@@ -916,7 +920,7 @@ async function linea(c, target){
         const serio = (f.prob || 0) >= 0.15;
         const puede = serio || (f.prob || 0) >= 0.07;
         html += `<div style="display:flex;align-items:center;margin:3px 0">
-          <span class="betq" style="flex:${ETQ};padding-right:7px;font-size:12px;line-height:1.3;align-self:center">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f, serio?'':puede?'color:var(--tinta)':'color:var(--tinta2);font-weight:normal')} ${fnum(f.proy)} <span style="color:#8b6914">◆${fnum(f.proy+bMed(f))}</span>${esRebote(f)?` <span style="font-weight:normal;color:#7a5c0e">60%:${fnum(f.proy+P60[f.pool])}</span>`:''} <span style="font-weight:normal;color:var(--tinta2)">[${fnum(f.proy+bLo(f))}·${fnum(f.proy+bHi(f))}]</span>${lado(f)}${apz(f)}${f.pool==='bombalim'?' <b style="color:#a00" title="bomba limpia: saltó desde la normalidad — lo normal es que DEVUELVA (~1 abajo de su línea nueva) y fracasa 1 de cada 6 (⚠17%)… pero 1 de cada 8 REPITE bomba (↗13%), el triple que el estirado por goma">▼devuelve salto+'+((((f.razon||'').match(/meti[oó] \+([\d.,]+)/)||[])[1])||'?')+' ⚠17% ↗13%</b>':''}${esRebote(f)?rebFl(f):''}${(goma(f)+repr(f)).replace(' reprisa larga',' rep.LARGA').replace(' reprisa',' rep')}</span>
+          <span class="betq" style="flex:${ETQ};padding-right:7px;font-size:12px;line-height:1.3;align-self:center">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f, serio?'':puede?'color:var(--tinta)':'color:var(--tinta2);font-weight:normal')} ${fnum(f.proy)} <span style="color:#8b6914">◆${fnum(f.proy+bMed(f))}</span>${esRebote(f)?` <span style="font-weight:normal;color:#7a5c0e">60%:${fnum(f.proy+P60[f.pool])}</span>`:''} <span style="font-weight:normal;color:var(--tinta2)">[${fnum(f.proy+bLo(f))}·${fnum(f.proy+bHi(f))}]</span>${lado(f)}${apz(f)}${f.pool==='bombalim'?' <b style="color:#a00" title="bomba limpia: saltó desde la normalidad — lo normal es que DEVUELVA (~1 abajo de su línea nueva) y fracasa 1 de cada 6 (⚠17%)… pero 1 de cada 8 REPITE bomba (↗13%), el triple que el estirado por goma">▼devuelve salto+'+((((f.razon||'').match(/meti[oó] \+([\d.,]+)/)||[])[1])||'?')+' ⚠17% ↗13%</b>':''}${esRebote(f)?rebFl(f):''}${(goma(f)+repr(f)+gat(f)+jok(f)).replace(' reprisa larga',' rep.LARGA').replace(' reprisa',' rep')}</span>
           <div style="flex:1;position:relative;height:16px;background:rgba(0,0,0,.03)">
             ${!esRebote(f)&&gomaAlc(f)? `<div title="el estirón de la goma 💣: hasta ${fnum(f.proy+gomaAlc(f))} (1 de cada 10)" style="position:absolute;top:0;bottom:0;left:${pct(f.proy+bHi(f))}%;width:${pct(f.proy+gomaAlc(f))-pct(f.proy+bHi(f))}%;background:rgba(212,160,23,.12);border:1px dashed var(--oro)"></div>`:''}
             ${esRebote(f)? `<div title="▼ el 60% del rebote: 6 de cada 10 rebotes no pasan de ${fnum(f.proy+P60[f.pool])}" style="position:absolute;top:0;left:calc(${pct(f.proy+P60[f.pool])}% - 6px);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid #7a5c0e;z-index:3"></div>`:''}
@@ -945,7 +949,7 @@ async function linea(c, target){
       html += `<div style="border-top:2px solid var(--tinta);margin-top:8px;padding-top:6px">
         <div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2)">🥊 EL RETADOR v7 <span class="chico" style="font-weight:normal">(memoria 10: forma + clase — experimental, en duelo diario contra el titular)</span></div>
         <div class="chico" style="padding:3px 0">` +
-        top7.map((f,i)=>`${i+1}º (${esc(f.mandil??'?')}) ${nomTab(f)} ${(100*f.prob).toFixed(0)}%${f.ptranq!=null?' · esperable '+(100*f.ptranq).toFixed(0)+'%':''} · jugable +$${fnum(f.pmin,2)}${goma(f)}${repr(f)}`).join(' — ') + `</div>`;
+        top7.map((f,i)=>`${i+1}º (${esc(f.mandil??'?')}) ${nomTab(f)} ${(100*f.prob).toFixed(0)}%${f.ptranq!=null?' · esperable '+(100*f.ptranq).toFixed(0)+'%':''} · jugable +$${fnum(f.pmin,2)}${goma(f)}${repr(f)}${gat(f)}${jok(f)}`).join(' — ') + `</div>`;
       const con7 = f7.filter(f=>f.proy!=null).sort((a,b)=>(b.proy+bMed(b))-(a.proy+bMed(a))).slice(0,9);
       if (con7.length >= 3){
         const cola7 = f => esRebote(f) && f.alcance ? Math.max(f.alcance, bHi(f)) : bHi(f);
@@ -971,7 +975,7 @@ async function linea(c, target){
           const serio = (f.prob || 0) >= 0.15;
           const puede = serio || (f.prob || 0) >= 0.07;
           html += `<div style="display:flex;align-items:center;margin:2px 0">
-            <span class="betq" style="flex:0 0 42%;padding-right:7px;font-size:11px;line-height:1.3;align-self:center">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f, serio?'color:#7a3cc8':puede?'color:var(--tinta)':'color:var(--tinta2);font-weight:normal')} ${fnum(f.proy)} <span style="color:#5a2d96">◆${fnum(f.proy+bMed(f))}</span>${esRebote(f)?` <span style="font-weight:normal;color:#5a2d96">60%:${fnum(f.proy+P60[f.pool])}</span>`:''} <span style="font-weight:normal;color:var(--tinta2)">[${fnum(f.proy+bLo(f))}·${fnum(f.proy+bHi(f))}]</span>${lado(f)}${apz(f)}${f.pool==='bombalim'?' <b style="color:#a00" title="bomba limpia: saltó desde la normalidad — lo normal es que DEVUELVA (~1 abajo de su línea nueva) y fracasa 1 de cada 6 (⚠17%)… pero 1 de cada 8 REPITE bomba (↗13%), el triple que el estirado por goma">▼devuelve salto+'+((((f.razon||'').match(/meti[oó] \+([\d.,]+)/)||[])[1])||'?')+' ⚠17% ↗13%</b>':''}${esRebote(f)?rebFl(f):''}${(goma(f)+repr(f)).replace(' reprisa larga',' rep.LARGA').replace(' reprisa',' rep')}</span>
+            <span class="betq" style="flex:0 0 42%;padding-right:7px;font-size:11px;line-height:1.3;align-self:center">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f, serio?'color:#7a3cc8':puede?'color:var(--tinta)':'color:var(--tinta2);font-weight:normal')} ${fnum(f.proy)} <span style="color:#5a2d96">◆${fnum(f.proy+bMed(f))}</span>${esRebote(f)?` <span style="font-weight:normal;color:#5a2d96">60%:${fnum(f.proy+P60[f.pool])}</span>`:''} <span style="font-weight:normal;color:var(--tinta2)">[${fnum(f.proy+bLo(f))}·${fnum(f.proy+bHi(f))}]</span>${lado(f)}${apz(f)}${f.pool==='bombalim'?' <b style="color:#a00" title="bomba limpia: saltó desde la normalidad — lo normal es que DEVUELVA (~1 abajo de su línea nueva) y fracasa 1 de cada 6 (⚠17%)… pero 1 de cada 8 REPITE bomba (↗13%), el triple que el estirado por goma">▼devuelve salto+'+((((f.razon||'').match(/meti[oó] \+([\d.,]+)/)||[])[1])||'?')+' ⚠17% ↗13%</b>':''}${esRebote(f)?rebFl(f):''}${(goma(f)+repr(f)+gat(f)+jok(f)).replace(' reprisa larga',' rep.LARGA').replace(' reprisa',' rep')}</span>
             <div style="flex:1;position:relative;height:15px;background:rgba(0,0,0,.03)">
               ${!esRebote(f)&&gomaAlc(f)? `<div title="el estirón de la goma 💣: hasta ${fnum(f.proy+gomaAlc(f))} (1 de cada 10)" style="position:absolute;top:0;bottom:0;left:${pc7(f.proy+bHi(f))}%;width:${pc7(f.proy+gomaAlc(f))-pc7(f.proy+bHi(f))}%;background:rgba(212,160,23,.12);border:1px dashed var(--oro)"></div>`:''}
               ${esRebote(f)? `<div title="▼ el 60% del rebote: 6 de cada 10 rebotes no pasan de ${fnum(f.proy+P60[f.pool])}" style="position:absolute;top:0;left:calc(${pc7(f.proy+P60[f.pool])}% - 6px);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid #5a2d96;z-index:3"></div>`:''}
