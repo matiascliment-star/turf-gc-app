@@ -456,6 +456,11 @@ async function cargarDia(){
         return 'N';
       };
       const DOCI = {B:'🔒', F:'🎯', N:'⚖', C:'🎲'};
+      // desempate de La Fija en el borde de la pata: si el que quedo afuera
+      // esta a <2pp del ultimo que entro, gana el de cola dorada (batacazo
+      // 1,5-1,9x: debut/rebotero/traspie) y la deuda NUNCA entra de tapado
+      const DORADA = new Set(['debut','frac10','frac15','frac6fav','vpostreb','bombareb']);
+      const clase = p => DORADA.has(p.pool) ? 2 : (p.pool==='sobre'||p.pool==='sobrenov') ? 0 : 1;
       const armarLeg = lote => {
         if (!lote || !lote.length) return null;
         const d = docDe(lote);
@@ -464,6 +469,12 @@ async function cargarDia(){
         const meta = d==='C' ? 0.62 : 0.72;
         const sel = []; let acc = 0;
         for (const p of lote){ sel.push(p); acc += +p.prob; if (acc >= meta || sel.length >= tope) break; }
+        const sig = lote[sel.length];
+        if (sig && sel.length > 1){
+          const ult = sel[sel.length-1];
+          if (+sig.prob >= +ult.prob - 0.02 && clase(sig) > clase(ult))
+            sel[sel.length-1] = sig;
+        }
         return {sel, d};
       };
       const plata = s => (+String(s).replace(/\./g,'')).toLocaleString('es-AR');
