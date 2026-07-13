@@ -691,6 +691,21 @@ async function linea(c, target){
   const conProb = filas.filter(f=>f.prob!=null).slice().sort((a,b)=>b.prob-a.prob);
   if (conProb.length){
     const esMC = conProb.some(f=>f.ptranq!=null);
+    {
+      const fav = conProb[0];
+      const ptc = (pros && pros[0] && pros[0].p_tranquila!=null) ? +pros[0].p_tranquila : null;
+      const enTheta = conProb.filter(f=>f.prob>=0.085).length;
+      let doc;
+      if (fav.prob >= 0.50)
+        doc = `<b style="color:#1a6e1a">🔒 BLINDADA</b> — <b>1 boleto</b>: bancá al (${esc(fav.mandil??'?')}) ${nomTab(fav)} solo (los así ganan 54 de cada 100)`;
+      else if (ptc!=null && ptc < 0.4)
+        doc = `<b style="color:var(--rojo)">🎲 CAÓTICA</b> — acá el favorito acierta 24 de cada 100: <b>pasala</b>, o cubrila ancha sabiendo que es moneda`;
+      else if (ptc!=null && ptc >= 0.6)
+        doc = `<b style="color:#1a6e1a">🎯 FIRME</b> — lo esperado manda: <b>jugada corta de ${Math.min(enTheta,3)||2}</b> (los verdes/negrita de arriba)`;
+      else
+        doc = `<b>⚖ NORMAL</b> — la estándar: <b>los ${enTheta||4} de negrita</b> (precio 8,5%+) — acertás 78 de cada 100`;
+      html += `<div style="padding:4px 6px;margin:2px 0 6px;border:1px solid var(--tinta2);border-radius:4px;font-size:13.5px" title="la doctrina de la casa (medida 13/07/26): cada tipo de carrera tiene su cantidad justa de boletos — blindada 1 (54%), firme 2-3, normal ~4 (78%), caótica ninguno">📋 <b>LA DOCTRINA:</b> ${doc}</div>`;
+    }
     const top = conProb.slice(0,3);
     // cartel de reprisa (parado 60+/180+/365+ dias), visible entre los probables
     const goma = f => {
