@@ -797,8 +797,8 @@ async function linea(c, target){
         : pasanC.length===4 ? 'el pick clásico: 80%'
         : 'la propia vara declara LOTERÍA: cubrí sabiéndolo o pasá';
       const fav1 = conProb[0];
-      const banca = (fav1.prob>=0.55)
-        ? `<br><b style="color:#1a6e1a" title="duelo medido 13/07/26: cuando el favorito del MC promete 55%+, cumple — gana 54% real (1 de cada 10 carreras)">🔒 LA BANCA DEL DÍA:</b> (${esc(fav1.mandil??'?')}) ${nomTab(fav1)} promete ${(fav1.prob*100).toFixed(0)}% — a este nivel el motor cumple (54% medido). Banca seca.` : '';
+      const banca = (fav1.prob>=0.50)
+        ? `<br><b style="color:#1a6e1a" title="desde el 14/07/26 los % vienen CALIBRADOS (son la chance real): favorito de 50%+ = banca seca, gana la mitad de verdad">🔒 LA BANCA DEL DÍA:</b> (${esc(fav1.mandil??'?')}) ${nomTab(fav1)} gana ${(fav1.prob*100).toFixed(0)}% de verdad (número calibrado). Banca seca.` : '';
       html += `<div class="chico" style="border-top:1px dotted var(--tinta2);margin-top:6px;padding-top:5px">
         <b style="color:#7a3c00" title="método de la casa (31.500 carreras 2019-26): el clavo es el mejor ◆ sin deuda; su peor día común es la vara; pasan los que llegan con el borde bueno de su caja">🔨 LA REGLA DEL CLAVO</b>
         <span style="color:var(--tinta2)">clavo: (${esc(clavo.mandil??'?')}) ${nomTab(clavo)} · vara ${fnum(varaC)} (su peor día común)</span><br>
