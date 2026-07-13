@@ -409,7 +409,7 @@ async function cargarDia(){
   cont.appendChild(nav);
   // JUGADAS DEL DIA: el pick de cada carrera con su precio minimo + tapados
   try {
-    let fp = `turf_pronosticos?fecha=eq.${f}&motor=eq.v3&select=hipodromo,carrera_nro,mandil,caballo,prob,precio_minimo,senal&order=carrera_nro`;
+    let fp = `turf_pronosticos?fecha=eq.${f}&motor=eq.v3&select=hipodromo,carrera_nro,mandil,caballo,prob,precio_minimo,senal,p_tranquila&order=carrera_nro`;
     if (h) fp += `&hipodromo=eq.${h}`;
     const pros = await q(fp);
     if (pros.length){
@@ -423,8 +423,18 @@ async function cargarDia(){
         lote.sort((a,b)=>b.prob-a.prob);
         const pick = lote[0];
         const et = (multi ? c.hipodromo[0] : '') + c.nro;
+        // doctrina de la carrera (misma logica que el veredicto de La Jugada)
+        const ptc = pick.p_tranquila!=null ? +pick.p_tranquila : null;
+        const nTh = lote.filter(p=>+p.prob>=0.085).length;
+        const badge = +pick.prob>=0.50
+          ? '<span title="BLINDADA: bancalo solo" style="color:#1a6e1a;font-weight:bold">🔒1</span>'
+          : (ptc!=null && ptc<0.4)
+          ? '<span title="CAÓTICA: pasala o cubrila sabiendo que es moneda" style="color:var(--rojo);font-weight:bold">🎲</span>'
+          : (ptc!=null && ptc>=0.6)
+          ? `<span title="FIRME: lo esperado manda — jugada corta" style="color:#1a6e1a;font-weight:bold">🎯${Math.min(nTh,3)}</span>`
+          : `<span title="NORMAL: los de precio 8,5%+" style="font-weight:bold">⚖${nTh||''}</span>`;
         filasJ += `<div class="fila-j" style="cursor:pointer" onclick="abrirNro('${c.hipodromo}',${c.nro})">
-          <b style="min-width:26px">${et}ª</b><span class="mandil" style="border:1px solid var(--tinta)">${esc(pick.mandil??'?')}</span><span class="pj">${esc(pick.caballo)}</span>
+          <b style="min-width:26px">${et}ª</b>${badge}<span class="mandil" style="border:1px solid var(--tinta)">${esc(pick.mandil??'?')}</span><span class="pj">${esc(pick.caballo)}</span>
           <span>gana ${(pick.prob*100).toFixed(0)}%</span>
           <span class="precio">jugar si paga +$${fnum(+pick.precio_minimo,2)}</span>
           ${pick.senal==='JOYA'?'<span class="etiqueta et-joya">🎯 Joya</span>':''}${pick.senal==='VALOR'?'<span class="etiqueta et-valor">💰 Tapado</span>':''}</div>`;
