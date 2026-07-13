@@ -751,7 +751,10 @@ async function linea(c, target){
       if (tierA.length){
         const abierta = tierA.length >= 6 ? '<b style="color:var(--rojo)">CARRERA ABIERTA</b> — ' : '';
         const pt = (proCab && Object.values(proCab)[0] && Object.values(proCab)[0].p_tranquila!=null) ? +Object.values(proCab)[0].p_tranquila : null;
-        html += `<div class="chico" style="padding:2px 2px 6px">${abierta}<b style="color:var(--rojo)">SI LA GANA UNO HACIENDO LO ESPERABLE${pt!=null?` (pasa ${(pt*100).toFixed(0)} de cada 100 carreras)`:''}:</b><br>
+        const sem = pt==null ? '' : pt>=0.6
+          ? ` <b style="color:#1a6e1a" title="carreras firmes (esperable 60%+): el favorito acierta 38 de cada 100 — acá lo esperado manda">🎯 CARRERA FIRME</b>`
+          : pt<0.4 ? ` <b style="color:var(--rojo)" title="carreras caóticas (esperable <40%): el favorito acierta solo 24 de cada 100 — pasá o cubrí sabiendo que es moneda">🎲 CAÓTICA</b>` : '';
+        html += `<div class="chico" style="padding:2px 2px 6px">${abierta}<b style="color:var(--rojo)">SI LA GANA UNO HACIENDO LO ESPERABLE${pt!=null?` (pasa ${(pt*100).toFixed(0)} de cada 100 carreras)`:''}:</b>${sem}<br>
           <b>Con movimientos promedio</b> (uno afloja 2,6 y otro avanza su promedio POR ESTADO: 2,6 el común · ~6,5 el rebotador · pero el brilloso en deuda solo 1,4 (el pichón brilloso 2,8) y el reprisado 2,9) <b>la ganan ${tierA.length}</b>: `
           + tierA.map(etiq).join(' — ')
           + (tierB.length ? `<br><b>Estirando a un buen día</b> (uno afloja 4 y otro mete su tope común: 4 el normal, ~10 el rebotador): se suman ` + tierB.map(f=>etiq(f,1)).join(' — ') : '');
