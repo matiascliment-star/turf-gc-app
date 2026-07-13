@@ -736,10 +736,10 @@ async function linea(c, target){
       // (el que viene de fracaso llega desde mas lejos: su rebote alcanza p90)
       const orden = f => f.ptranq ?? f.prob ?? 0;
       const etiq = f => { const g = mejor-f.proy;
-        return `(${esc(f.mandil??'?')}) ${nomTab(f)}${g<0.05?' puntero':' a '+fnum(g)}${(f.pool==='frac10'||f.pool==='frac6'||f.pool==='vpostreb')&&g>=5.2?' <b>por rebote</b>':''}${goma(f)}${repr(f)}${gat(f)}${jok(f)}${f.ptranq!=null?' · '+(f.ptranq*100).toFixed(0)+'%':''}`; };
+        return `(${esc(f.mandil??'?')}) ${nomTab(f)}${g<0.05?' puntero':' a '+fnum(g)}${(f.pool==='frac10'||f.pool==='frac15'||f.pool==='frac6'||f.pool==='vpostreb')&&g>=5.2?' <b>por rebote</b>':''}${goma(f)}${repr(f)}${gat(f)}${jok(f)}${f.ptranq!=null?' · '+(f.ptranq*100).toFixed(0)+'%':''}`; };
       // avance [promedio (p75), buen dia (p90)] POR ESTADO, pools v2.4 07/07/26:
       // el deudor y el reprisado avanzan MENOS que el comun (antes caian en 2,6)
-      const AV = {frac10:[6.5,10.3], frac6:[4.1,7], frac6fav:[3,7.1], vpostreb:[6,9],
+      const AV = {frac10:[6.5,9.8], frac15:[8.4,11.7], frac6:[4.1,7], frac6fav:[3,7.1], vpostreb:[6,9],
                   bomba10:[5,8.4], sobre:[1.4,4.0], sobrenov:[2.8,5.6], repr:[2.9,6.3], n1:[5.3,9.6], n23:[3.9,7.2]};
       const avz = f => AV[f.pool] || [2.6,4];
       // orden por LINEA (como se lee el programa); el % queda como peso de cada uno
@@ -785,7 +785,7 @@ async function linea(c, target){
     // es termometro: 1->48% banca seca / 2->61 / 3->71 / 4->80 / 5+ loteria.
     // Banca del dia (duelo 13/07): favorito MC 55%+ gana 54% real.
     const CAJA = {vet:[-1.4,0.6,2.5], n23:[-1.7,0.5,2.7], n1:[-1.6,1.0,3.7],
-                  frac10:[0.1,3.0,5.6], frac6:[-1.1,1.4,3.8], frac6fav:[-1.5,0.8,3.0],
+                  frac10:[-0.2,2.6,5.2], frac15:[1.2,4.4,7.1], frac6:[-1.1,1.4,3.8], frac6fav:[-1.5,0.8,3.0],
                   bombalim:[-2.7,-0.1,2.4], bombareb:[-0.3,2.2,4.5], vpostreb:[0.2,2.7,4.9],
                   bomba10:[-1.6,1.1,3.6], repr:[-3.3,-0.7,1.7], repr60:[-2.7,-0.3,1.9],
                   repr180:[-4.2,-1.4,1.1], repr365:[-6.2,-3.0,0.0], sobre:[-3.4,-1.4,0.5],
@@ -830,13 +830,13 @@ async function linea(c, target){
     // el resto se reparte mitad afuera de cada lado). La caja del rebotador
     // nace ARRIBA de su linea (frac10 +0.1, vpostreb +0.2) = la direccion
     const BANDA = {vet:[-1.4,0.6,2.5], n23:[-1.7,0.5,2.7], n1:[-1.6,1.0,3.7],
-                   frac10:[0.1,3.0,5.6], frac6:[-1.1,1.4,3.8], frac6fav:[-1.5,0.8,3.0],
+                   frac10:[-0.2,2.6,5.2], frac15:[1.2,4.4,7.1], frac6:[-1.1,1.4,3.8], frac6fav:[-1.5,0.8,3.0],
                    bombalim:[-2.7,-0.1,2.4], bombareb:[-0.3,2.2,4.5],
                    vpostreb:[0.2,2.7,4.9],
                    bomba10:[-1.6,1.1,3.6], repr:[-3.3,-0.7,1.7], repr60:[-2.7,-0.3,1.9], repr180:[-4.2,-1.4,1.1],
                    repr365:[-6.2,-3.0,0.0], sobre:[-3.4,-1.4,0.5], sobrenov:[-2.4,-0.2,1.7],
                    debut:[-5.7,-1.7,1.5]};  // vs media del lote: caja ancha de verdad
-    const P60 = {frac10:4.5, frac6:2.8, vpostreb:4.0, bombareb:3.6, bomba10:2.7, debut:0.1};
+    const P60 = {frac10:4.1, frac15:6.0, frac6:2.8, vpostreb:4.0, bombareb:3.6, bomba10:2.7, debut:0.1};
     const P40 = {sobre:-2.5, sobrenov:-1.4, bombalim:-1.6, repr180:-3.0, repr365:-4.8, debut:-4.0};   // piso tipico: 6 de cada 10 no caen mas abajo
     const GOMA90 = {21: 8.2, 32: 10.0, 45: 12.8};   // p90 del hundido por nivel de 💣
     const gomaAlc = f => { const m = (f.razon||'').match(/goma: hundido .*?bomba (\d+)%/);
@@ -848,7 +848,7 @@ async function linea(c, target){
     // EL LADO (08/07/26, pedido Matias): de cada 100 caballos en ese estado,
     // cuantos corren ARRIBA de su linea (+1 o mas) y cuantos ABAJO (-1 o menos).
     // Medido de los dados reales (deltas_pools.json). Flecha solo si esta cargado.
-    const LADO = {vet:[46,36], n23:[46,38], n1:[49,36], frac10:[62,27], frac6:[53,33],
+    const LADO = {vet:[46,36], n23:[46,38], n1:[49,36], frac10:[60,29], frac15:[68,23], frac6:[53,33],
                   frac6fav:[49,36], vpostreb:[62,26], bomba10:[50,37], repr:[38,47],
                   sobre:[29,54], sobrenov:[39,44], debut:[35,54],
                   repr60:[40,45], repr180:[33,53], repr365:[27,61],
@@ -863,8 +863,8 @@ async function linea(c, target){
     const bLo = f => (BANDA[f.pool]||BANDA.vet)[0];
     const bMed = f => (BANDA[f.pool]||BANDA.vet)[1];
     const bHi = f => (BANDA[f.pool]||BANDA.vet)[2];
-    const esRebote = f => f.pool==='frac10'||f.pool==='frac6'||f.pool==='vpostreb'||f.pool==='bombareb'||f.pool==='bomba10'||f.pool==='debut';
-    const REBPC = {frac10:31, frac6:20, frac6fav:15, vpostreb:25, bombareb:24, bomba10:19, debut:16};
+    const esRebote = f => f.pool==='frac10'||f.pool==='frac15'||f.pool==='frac6'||f.pool==='vpostreb'||f.pool==='bombareb'||f.pool==='bomba10'||f.pool==='debut';
+    const REBPC = {frac10:28, frac15:40, frac6:20, frac6fav:15, vpostreb:25, bombareb:24, bomba10:19, debut:16};
     const rebFl = f => ` <b title="probabilidad de bomba (+6 o mas) de este estado">↗${REBPC[f.pool]||''}%</b>`;
     // esperado = el MISMO ◆ de las bandas (linea + mediana del estado, todos
     // los estados — unificado 07/07: la llegada proyectada decia otra cosa que
@@ -1012,7 +1012,7 @@ async function linea(c, target){
       }
       if (reales && reales.length){
         const realCab = {}; for (const r of reales) realCab[(r.caballo||'').toUpperCase().trim()] = r;
-        const RB = {vet:0.6, n23:0.5, n1:1.0, frac10:3.0, frac6:1.4, frac6fav:0.8,
+        const RB = {vet:0.6, n23:0.5, n1:1.0, frac10:2.6, frac15:4.4, frac6:1.4, frac6fav:0.8,
                     vpostreb:2.7, bomba10:1.1, bombalim:-0.1, bombareb:2.2, repr:-0.7, repr60:-0.3, repr180:-1.4,
                     repr365:-3.0, sobre:-1.4, sobrenov:-0.2, debut:-1.7};
         const porProb = [...pros].sort((a,b)=>(+b.prob)-(+a.prob));
