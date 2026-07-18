@@ -662,13 +662,14 @@ async function linea(c, target){
   const ids = corredores.map(x => x.caballo_rp_id).filter(r => r != null).join(',');
   const sueltos = corredores.filter(x => x.caballo_rp_id == null).map(x => '"' + x.caballo.replace(/"/g,'') + '"').join(',');
   const selPerf = 'select=caballo,caballo_rp_id,fecha,hipodromo,carrera_nro,distancia,pista,estado,kg,posicion,dist_acum,dividendo,desarrollo,incidencias,tiempo,performance,video_url,peso_animal,condicion,premio,jockey,cuidador,herraje';
-  const [perfsRp, perfsNom, coms, pats, pros, pros7, cabs, enfr, tend, ejsAll, rats, barr] = await Promise.all([
+  const [perfsRp, perfsNom, coms, pats, pros, pros7, prosb, cabs, enfr, tend, ejsAll, rats, barr] = await Promise.all([
     ids ? q(`turf_performances?caballo_rp_id=in.(${ids})&fecha=lt.${c.fecha}&order=fecha.desc&limit=1000&${selPerf}`) : [],
     sueltos ? q(`turf_performances?caballo=in.(${encodeURIComponent(sueltos)})&fecha=lt.${c.fecha}&order=fecha.desc&limit=1000&${selPerf}`) : [],
     q(`turf_comentarios?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&select=caballo_nro,caballo,comentario,entrenamientos,partida_final`),
     ids ? q(`turf_patrones?caballo_rp_id=in.(${ids})&select=caballo,caballo_rp_id,tipo,pronostico,ciclo,sd,desde_fracaso,racha_actual,tipo_matias`) : [],
     q(`turf_pronosticos?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&motor=eq.v3&select=caballo,prob,prob_marca,prob_tranq,p_tranquila,precio_minimo,senal,razon,proy,pool,alcance`),
     q(`turf_pronosticos?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&motor=eq.v7&select=caballo,mandil,prob,prob_tranq,proy,precio_minimo,pool,alcance,razon`).catch(()=>[]),
+    q(`turf_pronosticos?fecha=eq.${c.fecha}&hipodromo=eq.${c.hipodromo}&carrera_nro=eq.${c.nro}&motor=eq.vb&select=caballo,mandil,prob,prob_tranq,proy,precio_minimo,pool,alcance,razon`).catch(()=>[]),
     ids ? q(`turf_caballos?rp_id=in.(${ids})&select=rp_id,nombre,sexo,pelaje,nacimiento,padre,madre,abuelo_materno,criador`) : [],
     ids ? q(`turf_enfrentamientos?caballo_a_rp_id=in.(${ids})&caballo_b_rp_id=in.(${ids})&fecha=lt.${c.fecha}&margen_ab=not.is.null&order=fecha&limit=500&select=caballo_a,caballo_b,fecha,margen_ab`) : [],
     ids ? q(`turf_aprontes_tendencia?caballo_rp_id=in.(${ids})&select=caballo,caballo_rp_id,mejora,vrel_reciente,aprontes`) : [],
@@ -998,6 +999,58 @@ async function linea(c, target){
             
             <div style="position:absolute;top:0;bottom:0;left:${pct(piso)}%;width:2px;background:var(--rojo)"></div>
           </div></div>`;
+      }
+      html += `</div>`;
+    }
+    // 🏆 EL BLEND vb (mercado en la mesa, 13/07/26): linea x marcas de la revista
+    if (prosb && prosb.length){
+      const fb = prosb.map(p => ({caballo: p.caballo, mandil: p.mandil,
+        prob: +p.prob, ptranq: p.prob_tranq!=null? +p.prob_tranq : null,
+        proy: p.proy!=null? +p.proy : null, pmin: +p.precio_minimo,
+        pool: p.pool, alcance: p.alcance!=null? +p.alcance : null,
+        razon: p.razon}))
+        .sort((a,b)=>b.prob-a.prob);
+      const rev = f => { const m = (f.razon||'').match(/la revista lo marca (\d)º/);
+        return m ? ` <b style="color:#0f5c36" title="marca de la revista (el proxy del mercado): su ${m[1]}º candidato — ya pesado en el %">🏆${m[1]}º</b>` : ''; };
+      const topb = fb.slice(0,3);
+      html += `<div style="border-top:2px solid var(--tinta);margin-top:8px;padding-top:6px">
+        <div style="font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:2px;color:var(--tinta2)">🏆 EL BLEND vb <span class="chico" style="font-weight:normal">(la línea × el mercado: las marcas de la revista pesan 60% — validado en 154k carreras, 9/9 eras)</span></div>
+        <div class="chico" style="padding:3px 0">` +
+        topb.map((f,i)=>`${i+1}º (${esc(f.mandil??'?')}) ${nomTab(f)} ${(100*f.prob).toFixed(0)}%${rev(f)}${f.ptranq!=null?' · esperable '+(100*f.ptranq).toFixed(0)+'%':''}${goma(f)}${repr(f)}${gat(f)}${jok(f)}`).join(' — ') + `</div>`;
+      const conb = fb.filter(f=>f.proy!=null).sort((a,b)=>(b.proy+bMed(b))-(a.proy+bMed(a))).slice(0,9);
+      if (conb.length >= 3){
+        const colab = f => esRebote(f) && f.alcance ? Math.max(f.alcance, bHi(f)) : bHi(f);
+        const lob = Math.min(...conb.map(f=>f.proy + bLo(f))) - 0.5;
+        const hib = Math.max(...conb.map(f=>f.proy + colab(f))) + 0.5;
+        const pcb = v => Math.max(0, Math.min(100, 100*(v-lob)/(hib-lob)));
+        const pisob = Math.max(...conb.map(f => f.proy + bMed(f)));
+        const pasob = (hib - lob) > 16 ? 4 : (hib - lob) > 8 ? 2 : 1;
+        let reglab = '';
+        for (let t = Math.ceil(lob/pasob)*pasob; t <= hib; t += pasob)
+          reglab += `<span style="position:absolute;left:${pcb(t)}%;transform:translateX(-50%);font-size:9px;color:var(--tinta2)">${t}</span>`;
+        html += `<div style="display:flex;height:13px;margin:3px 0 0">
+          <span style="flex:0 0 42%"></span>
+          <div style="flex:1;position:relative">${reglab}
+            <span style="position:absolute;left:${pcb(pisob)}%;transform:translateX(-50%);font-size:9px;color:#0f5c36;font-weight:bold;background:#fff">${fnum(pisob)}</span>
+          </div></div>`;
+        for (const f of conb){
+          const cl = colab(f);
+          const serio = (f.prob || 0) >= 0.15;
+          const puede = serio || (f.prob || 0) >= 0.07;
+          html += `<div style="display:flex;align-items:center;margin:2px 0">
+            <span class="betq" style="flex:0 0 42%;padding-right:7px;font-size:11px;line-height:1.3;align-self:center">${btnJ(c.nro,f)}(${esc(f.mandil??'?')}) ${nomTab(f, serio?'color:#0f5c36':puede?'color:var(--tinta)':'color:var(--tinta2);font-weight:normal')} ${fnum(f.proy)} <span style="color:#1a7a4a">◆${fnum(f.proy+bMed(f))}</span>${esRebote(f)?` <span style="font-weight:normal;color:#1a7a4a">60%:${fnum(f.proy+P60[f.pool])}</span>`:''} <span style="font-weight:normal;color:var(--tinta2)">[${fnum(f.proy+bLo(f))}·${fnum(f.proy+bHi(f))}]</span>${rev(f)}${lado(f)}${apz(f)}${f.pool==='bombalim'?' <b style="color:#a00" title="bomba limpia: saltó desde la normalidad — lo normal es que DEVUELVA (~1 abajo de su línea nueva) y fracasa 1 de cada 6 (⚠17%)… pero 1 de cada 8 REPITE bomba (↗13%)">▼devuelve salto+'+((((f.razon||'').match(/meti[oó] \+([\d.,]+)/)||[])[1])||'?')+' ⚠17% ↗13%</b>':''}${esRebote(f)?rebFl(f):''}${(goma(f)+repr(f)+gat(f)+jok(f)).replace(' reprisa larga',' rep.LARGA').replace(' reprisa',' rep')}</span>
+            <div style="flex:1;position:relative;height:15px;background:rgba(0,0,0,.03)">
+              ${!esRebote(f)&&gomaAlc(f)? `<div title="el estirón de la goma 💣: hasta ${fnum(f.proy+gomaAlc(f))} (1 de cada 10)" style="position:absolute;top:0;bottom:0;left:${pcb(f.proy+bHi(f))}%;width:${pcb(f.proy+gomaAlc(f))-pcb(f.proy+bHi(f))}%;background:rgba(212,160,23,.12);border:1px dashed var(--oro)"></div>`:''}
+              ${esRebote(f)? `<div title="▼ el 60% del rebote: 6 de cada 10 rebotes no pasan de ${fnum(f.proy+P60[f.pool])}" style="position:absolute;top:0;left:calc(${pcb(f.proy+P60[f.pool])}% - 6px);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid #0f5c36;z-index:3"></div>`:''}
+            ${(f.pool==='sobre'||f.pool==='sobrenov')&&(f.razon||'').match(/brilla \+?([\d.,]+) vs su vida/)? `<div title="su VIDA: el elástico lo tira hacia acá — está goma+${f.razon.match(/brilla \+?([\d.,]+) vs su vida/)[1]} arriba de lo que es" style="position:absolute;top:10%;bottom:10%;left:${pcb(f.proy-parseFloat(f.razon.match(/brilla \+?([\d.,]+) vs su vida/)[1].replace(',','.')))}%;width:0;border-left:2px dashed #d8821e;z-index:3"></div>`:''}
+            ${f.pool==='bombalim'&&(f.razon||'').match(/meti[oó] \+([\d.,]+)/)? `<div title="lo que ERA antes de la bomba: si el salto era humo vuelve acá (fracasa 1 de 6)" style="position:absolute;top:10%;bottom:10%;left:${pcb(f.proy-parseFloat(f.razon.match(/meti[oó] \+([\d.,]+)/)[1].replace(',','.'))/2)}%;width:0;border-left:2px dashed #b02015;z-index:3"></div>`:''}
+            ${MALA[f.pool]!=null? `<div title="la cola mala: 1 de cada 10 cae hasta ${fnum(f.proy+MALA[f.pool])} (rojo=viene de bomba · naranja=goma estirada · gris=reprise)" style="position:absolute;top:0;bottom:0;left:${pcb(f.proy+MALA[f.pool])}%;width:${pcb(f.proy+bLo(f))-pcb(f.proy+MALA[f.pool])}%;background:${CAUSA(f.pool)[1]};border:2px ${CAUSA(f.pool)[2]} ${CAUSA(f.pool)[0]}"></div>`:''}
+              ${cl>bHi(f)? `<div title="el estirón del rebote: hasta ${fnum(f.proy+cl)}" style="position:absolute;top:0;bottom:0;left:${pcb(f.proy+bHi(f))}%;width:${pcb(f.proy+cl)-pcb(f.proy+bHi(f))}%;background:rgba(26,122,74,.12);border:1px dashed #1a7a4a"></div>`:''}
+              <div title="su día normal: ${fnum(f.proy+bLo(f))} a ${fnum(f.proy+bHi(f))}" style="position:absolute;top:0;bottom:0;left:${pcb(f.proy+bLo(f))}%;width:${pcb(f.proy+bHi(f))-pcb(f.proy+bLo(f))}%;background:${serio?'rgba(26,122,74,.28)':puede?'rgba(26,122,74,.14)':'rgba(0,0,0,.10)'};border:1px solid ${puede?'#1a7a4a':'#bbb'}"></div>
+              <div title="su línea: ${fnum(f.proy)}" style="position:absolute;top:0;bottom:0;left:${pcb(f.proy)}%;width:2px;background:var(--tinta);opacity:.7;z-index:2"></div><div title="su día más probable: ${fnum(f.proy+bMed(f))}" style="position:absolute;top:0;bottom:0;left:calc(${pcb(f.proy+bMed(f))}% - 5px);display:flex;align-items:center;font-size:10px;color:#0f5c36;z-index:4;text-shadow:0 0 2px #fff"><b>◆</b></div>
+              <div style="position:absolute;top:0;bottom:0;left:${pcb(pisob)}%;width:2px;background:#0f5c36"></div>
+            </div></div>`;
+        }
       }
       html += `</div>`;
     }
